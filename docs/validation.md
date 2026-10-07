@@ -1,5 +1,7 @@
 # Validation — 2026-10-03
 
+Historical record. The app has since been deployed; see [AUDIT.md](../AUDIT.md) for current verification results and remaining work.
+
 Completed in this workspace:
 
 - Dependency installation from the local npm cache; exact resolved versions recorded in package-lock.json.
