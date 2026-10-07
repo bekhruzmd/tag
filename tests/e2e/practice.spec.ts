@@ -48,3 +48,18 @@ test("join form does not enable participation without explicit consent", async (
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: "Join lobby" })).toBeEnabled();
 });
+test("host can preview the safe-zone size while editing settings", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Get a feel for it/ }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByText(/Safe zone 800 m across/)).toBeVisible();
+  await page.getByLabel(/Starting radius/).fill("200");
+  await expect(page.getByText(/Safe zone 400 m across/)).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBeTruthy();
+});

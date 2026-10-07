@@ -21,7 +21,22 @@ export type Settings = {
   seekers_per: number;
   tag_distance: number;
   gps_grace: number;
+  preset?: "auto" | "custom";
 };
+export type NumericSetting = Exclude<keyof Settings, "preset">;
+export type Preset = {
+  name: string;
+  min: number;
+  max: number;
+  settings: Partial<Record<NumericSetting, number>>;
+};
+// The server owns the preset table and ships it with the lobby snapshot.
+export function presetFor(
+  presets: Preset[] | null | undefined,
+  players: number,
+) {
+  return presets?.find((p) => players >= p.min && players <= p.max);
+}
 export const DEFAULT_SETTINGS: Settings = {
   hide_seconds: 300,
   hunt_seconds: 1800,
@@ -48,6 +63,7 @@ export type Snapshot = {
   host: string;
   phase: Phase;
   settings: Settings;
+  presets?: Preset[] | null;
   center: { lat: number; lng: number };
   radius: number;
   next_radius: number;

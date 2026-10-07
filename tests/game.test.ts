@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distance, circle, countdown, clock } from "../src/lib/types";
+import {
+  distance,
+  circle,
+  countdown,
+  clock,
+  presetFor,
+} from "../src/lib/types";
 import { demoGame, demoAction, advanceDemo } from "../src/lib/demo";
 test("geographic distance uses meters across the date line", () => {
   assert.equal(distance({ lat: 0, lng: 0 }, { lat: 0, lng: 0 }), 0);
@@ -55,4 +61,16 @@ test("practice timer awards a surviving hider the win", () => {
   const ended = advanceDemo(g, Date.parse(g.ends_at!));
   assert.equal(ended.winner, "hiders");
   assert.equal(ended.reveals.length, 0);
+});
+test("presetFor picks the tier for the player count and tolerates a missing table", () => {
+  const presets = [
+    { name: "Small", min: 2, max: 4, settings: { radius: 150 } },
+    { name: "Medium", min: 5, max: 9, settings: { radius: 300 } },
+  ];
+  assert.equal(presetFor(presets, 2)?.name, "Small");
+  assert.equal(presetFor(presets, 4)?.name, "Small");
+  assert.equal(presetFor(presets, 5)?.name, "Medium");
+  assert.equal(presetFor(presets, 12), undefined);
+  assert.equal(presetFor(undefined, 3), undefined);
+  assert.equal(presetFor(null, 3), undefined);
 });

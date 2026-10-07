@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { GeoJSONSource, Map as LibreMap, setWorkerUrl } from "maplibre-gl";
+import { GeoJSONSource, Map as LibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { LocateFixed } from "lucide-react";
 import { Snapshot, Fix, circle } from "@/lib/types";
-// OpenFreeMap: free vector tiles built on OpenStreetMap data, no API key or quota.
-setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
-const MAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
+import { MAP_STYLE } from "@/lib/map-config";
 export default function GameMap({
   game,
   fix,

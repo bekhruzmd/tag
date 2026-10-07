@@ -52,7 +52,7 @@ Open [localhost:3000](http://localhost:3000) and choose **Try the practice demo*
 
 1. Create a Supabase project.
 2. Under **Authentication → Sign In / Providers**, enable **Anonymous sign-ins**.
-3. In the SQL Editor, run [`supabase/migrations/001_game.sql`](supabase/migrations/001_game.sql) **once in a new project**. This creates the game tables, access rules, functions, Realtime publication, and scheduled jobs. Enable `pg_cron` if prompted. Then run [`supabase/migrations/002_fix_ambiguous_aliases.sql`](supabase/migrations/002_fix_ambiguous_aliases.sql) once (it fixes room creation and mid-game reveals; new installs of the updated 001 file already include the fix, and it is safe to re-run).
+3. In the SQL Editor, run [`supabase/migrations/001_game.sql`](supabase/migrations/001_game.sql) **once in a new project**. This creates the game tables, access rules, functions, Realtime publication, and scheduled jobs. Enable `pg_cron` if prompted. Then run [`supabase/migrations/002_fix_ambiguous_aliases.sql`](supabase/migrations/002_fix_ambiguous_aliases.sql) once (it fixes room creation and mid-game reveals; new installs of the updated 001 file already include the fix, and it is safe to re-run). Finally run [`supabase/migrations/003_retention_and_presets.sql`](supabase/migrations/003_retention_and_presets.sql) once (shorter data retention and player-count size presets; also safe to re-run).
 4. Create your local environment file:
 
    ```sh

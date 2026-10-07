@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import {
   ArrowRight,
   Check,
@@ -12,8 +13,12 @@ import {
   Shield,
   Users,
 } from "lucide-react";
-import { Snapshot, Settings } from "@/lib/types";
+import { Snapshot, Settings, NumericSetting, presetFor } from "@/lib/types";
 import { Brand } from "./home";
+const RadiusPreview = dynamic(() => import("./radius-preview"), {
+  ssr: false,
+  loading: () => <div className="radius-preview" />,
+});
 export default function Lobby({
   game,
   busy,
@@ -66,8 +71,15 @@ export default function Lobby({
     game.players.length - 1,
     Math.ceil(game.players.length / game.settings.seekers_per),
   );
+  // "Auto" sizes the game for the final head count when the host starts, so show that.
+  const players = game.players.length;
+  const autoTier = presetFor(game.presets, players);
+  const shown: Settings =
+    game.settings.preset === "auto" && autoTier
+      ? { ...game.settings, ...autoTier.settings }
+      : game.settings;
   const fields: {
-    key: keyof Settings;
+    key: NumericSetting;
     label: string;
     min: number;
     max: number;
@@ -244,7 +256,7 @@ export default function Lobby({
                   <button
                     className="text-button small"
                     onClick={() => {
-                      setSettings(game.settings);
+                      setSettings(shown);
                       setEditing(!editing);
                     }}
                   >
@@ -262,6 +274,75 @@ export default function Lobby({
                     });
                   }}
                 >
+                  {game.presets && (
+                    <div
+                      className="preset-row"
+                      role="group"
+                      aria-label="Game size"
+                    >
+                      <button
+                        type="button"
+                        className={
+                          settings.preset === "auto" ? "is-active" : ""
+                        }
+                        aria-pressed={settings.preset === "auto"}
+                        onClick={() =>
+                          setSettings({
+                            ...settings,
+                            ...autoTier?.settings,
+                            preset: "auto",
+                          })
+                        }
+                      >
+                        Auto
+                        <small>{autoTier?.name ?? "by players"}</small>
+                      </button>
+                      {game.presets.map((p) => (
+                        <button
+                          type="button"
+                          key={p.name}
+                          className={
+                            settings.preset !== "auto" &&
+                            Object.entries(p.settings).every(
+                              ([k, v]) => settings[k as NumericSetting] === v,
+                            )
+                              ? "is-active"
+                              : ""
+                          }
+                          onClick={() =>
+                            setSettings({
+                              ...settings,
+                              ...p.settings,
+                              preset: "custom",
+                            })
+                          }
+                        >
+                          {p.name}
+                          <small>
+                            {p.min}–{p.max}
+                          </small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {game.presets && (
+                    <p className="preset-note">
+                      {settings.preset === "auto"
+                        ? `Sized automatically for the final head count when you start (${players} now).`
+                        : "Custom values. Pick Auto to size by player count again."}
+                    </p>
+                  )}
+                  <RadiusPreview
+                    center={game.center}
+                    radius={settings.radius}
+                    minRadius={settings.min_radius}
+                  />
+                  <p className="preview-caption">
+                    Safe zone {Math.round(settings.radius * 2)} m across · about{" "}
+                    {Math.max(1, Math.round((settings.radius * 2) / 1.4 / 60))}{" "}
+                    min to walk edge to edge · closes to{" "}
+                    {Math.round(settings.min_radius * 2)} m
+                  </p>
                   {fields.map((f) => (
                     <label key={f.key}>
                       {f.label}
@@ -276,6 +357,7 @@ export default function Lobby({
                             setSettings({
                               ...settings,
                               [f.key]: Number(e.target.value),
+                              preset: "custom",
                             })
                           }
                         />
@@ -289,31 +371,39 @@ export default function Lobby({
                 </form>
               ) : (
                 <div className="settings-summary">
+                  {game.settings.preset === "auto" && autoTier && (
+                    <div>
+                      <span>Size</span>
+                      <strong>
+                        Auto · {autoTier.name} for {players}
+                      </strong>
+                    </div>
+                  )}
                   <div>
                     <span>Head start</span>
                     <strong>
-                      {game.settings.hide_seconds / 60 < 1
-                        ? `${game.settings.hide_seconds} sec`
-                        : `${game.settings.hide_seconds / 60} min`}
+                      {shown.hide_seconds / 60 < 1
+                        ? `${shown.hide_seconds} sec`
+                        : `${shown.hide_seconds / 60} min`}
                     </strong>
                   </div>
                   <div>
                     <span>The hunt</span>
-                    <strong>{game.settings.hunt_seconds / 60} min</strong>
+                    <strong>{shown.hunt_seconds / 60} min</strong>
                   </div>
                   <div>
                     <span>Location reveals</span>
                     <strong>
                       Every{" "}
-                      {game.settings.reveal_seconds < 60
-                        ? `${game.settings.reveal_seconds}s`
-                        : `${game.settings.reveal_seconds / 60} min`}
+                      {shown.reveal_seconds < 60
+                        ? `${shown.reveal_seconds}s`
+                        : `${shown.reveal_seconds / 60} min`}
                     </strong>
                   </div>
                   <div>
                     <span>Safe zone</span>
                     <strong>
-                      {game.settings.radius}m → {game.settings.min_radius}m
+                      {shown.radius}m → {shown.min_radius}m
                     </strong>
                   </div>
                   <div>

@@ -903,6 +903,59 @@ button.secondary {
   font-size: 9px;
   color: var(--muted);
 }
+.preset-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.preset-row button {
+  flex: 1 1 52px;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  line-height: 1.2;
+}
+.preset-row button small {
+  font-size: 9px;
+  opacity: 0.8;
+}
+.preset-row button.is-active {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+.preset-note,
+.preview-caption {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.radius-preview {
+  position: relative;
+  height: 210px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111a11;
+  border: 1px solid var(--line);
+}
+.radius-preview .preview-map {
+  width: 100%;
+  height: 100%;
+}
+.preview-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--muted);
+}
 .game-screen {
   position: relative;
   width: 100%;
