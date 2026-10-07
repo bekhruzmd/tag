@@ -16,12 +16,23 @@ import {
 } from "lucide-react";
 import CampusArt from "./campus-art";
 import { configured } from "@/lib/supabase";
-export function Brand() {
-  return (
-    <a href="/" className="brand" aria-label="TAG home">
+// Only the landing page links home. Inside a room a full reload would just restore the
+// same screen from localStorage, so the wordmark stays plain text there.
+export function Brand({ link = false }: { link?: boolean }) {
+  const mark = (
+    <>
       tag<span className="brand-dot">.</span>
       <span className="brand-cross">⌖</span>
+    </>
+  );
+  return link ? (
+    <a href="/" className="brand" aria-label="TAG home">
+      {mark}
     </a>
+  ) : (
+    <span className="brand" role="img" aria-label="TAG">
+      {mark}
+    </span>
   );
 }
 export default function Home({
@@ -66,7 +77,7 @@ export default function Home({
   return (
     <div className="landing">
       <header className="site-header">
-        <Brand />
+        <Brand link />
         <div className="header-right">
           <span className="status-dot" /> OUTSIDE IS THE NEW ONLINE{" "}
           <span className="version-pill">BETA 01</span>

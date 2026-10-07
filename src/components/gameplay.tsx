@@ -86,6 +86,15 @@ export default function Gameplay({
     const timer = setTimeout(() => setAnnouncement(""), 2600);
     return () => clearTimeout(timer);
   }, [game.phase, me.role]);
+  const gpsProblem =
+    game.id !== "demo" &&
+    !eliminated &&
+    /denied|unusable|unavailable|low/.test(gps);
+  const gpsAlarm = gpsProblem || Boolean(game.gps_deadline && !eliminated);
+  useEffect(() => {
+    // Players are looking at the world, not the screen: nudge them when location breaks.
+    if (gpsAlarm) navigator.vibrate?.([220, 120, 220]);
+  }, [gpsAlarm]);
   return (
     <div className="game-screen">
       <GameMap game={game} fix={fix} now={now} />
@@ -237,6 +246,12 @@ export default function Gameplay({
               ZONE CLOSING · {zone}s to reach the {Math.round(game.next_radius)}
               m circle
             </span>
+          </div>
+        )}
+        {gpsProblem && (
+          <div className="gps-alert" role="alert">
+            {gps}. Move to open sky, check location permission, and keep this
+            screen on.
           </div>
         )}
         {game.gps_deadline && !eliminated && (

@@ -584,6 +584,13 @@ button.secondary {
   min-width: 32px;
   min-height: 32px;
 }
+.error-banner .fresh-start {
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  padding: 0 12px;
+  white-space: nowrap;
+  font-weight: 600;
+}
 .spin {
   animation: spin 1s linear infinite;
 }
@@ -835,6 +842,15 @@ button.secondary {
   justify-content: space-between;
   gap: 24px;
 }
+.lobby-bottom {
+  flex-wrap: wrap;
+}
+.lobby-bottom > .inline-error {
+  order: 3;
+  flex-basis: 100%;
+  margin: 0;
+  line-height: 1.6;
+}
 .lobby-bottom > div:first-child {
   display: flex;
   align-items: center;
@@ -895,7 +911,7 @@ button.secondary {
   overflow: hidden;
   background: #20291e;
 }
-.live-map,
+.game-screen .live-map,
 .game-vignette,
 .map-loading {
   position: absolute;

@@ -27,10 +27,41 @@ export default function Lobby({
 }) {
   const me = game.players.find((p) => p.id === game.me)!;
   const host = game.host === me.id;
-  const [copied, setCopied] = useState(false),
+  const [locationMessage, setLocationMessage] = useState(""),
+    [checking, setChecking] = useState(false),
+    [copied, setCopied] = useState(false),
     [editing, setEditing] = useState(false),
     [settings, setSettings] = useState(game.settings);
   const ready = game.players.filter((p) => p.ready).length;
+  // Asking inside a tap is what makes phones show the permission prompt reliably, and it
+  // surfaces blocked permission or an insecure (http) page now rather than at game start.
+  const toggleReady = () => {
+    if (me.ready || game.id === "demo")
+      return void act("ready", { ready: !me.ready });
+    setLocationMessage("");
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setLocationMessage(
+        "Location only works on a secure https:// page. Open the game from its https link, not an IP address.",
+      );
+      return;
+    }
+    setChecking(true);
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setChecking(false);
+        void act("ready", { ready: true });
+      },
+      (e) => {
+        setChecking(false);
+        setLocationMessage(
+          e.code === 1
+            ? "Location is blocked for this site. iPhone: Settings → Privacy & Security → Location Services → Safari Websites → While Using the App (or tap aA in the address bar → Website Settings → Location → Allow). Android: tap the lock icon in the address bar → Permissions → Location → Allow. Then reload and tap I’m ready again."
+            : "Couldn’t get a GPS fix yet. Step outside or near a window, then tap I’m ready again.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    );
+  };
   const seekerCount = Math.min(
     game.players.length - 1,
     Math.ceil(game.players.length / game.settings.seekers_per),
@@ -327,14 +358,23 @@ export default function Lobby({
               </small>
             </span>
           </div>
+          {locationMessage && (
+            <p className="inline-error" role="alert">
+              {locationMessage}
+            </p>
+          )}
           <div className="lobby-buttons">
             <button
               className={me.ready ? "secondary" : "primary"}
-              disabled={busy}
-              onClick={() => void act("ready", { ready: !me.ready })}
+              disabled={busy || checking}
+              onClick={toggleReady}
             >
               {me.ready ? <Check size={17} /> : <Shield size={17} />}{" "}
-              {me.ready ? "Ready!" : "I’m ready"}
+              {me.ready
+                ? "Ready!"
+                : checking
+                  ? "Checking location…"
+                  : "I’m ready"}
             </button>
             {host && (
               <button

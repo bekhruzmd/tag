@@ -1,107 +1,7 @@
--- TAG: server-authoritative engine. Run in the Supabase SQL editor as postgres.
-create schema if not exists private;
-revoke all on schema private from public, anon, authenticated;
-create extension if not exists pgcrypto with schema extensions;
-create extension if not exists pg_cron;
-
-create table private.rooms (
- id uuid primary key default gen_random_uuid(), code text not null unique,
- host uuid, phase text not null default 'lobby' check(phase in ('lobby','hiding','hunting','finished','cancelled')),
- settings jsonb not null, lat double precision not null, lng double precision not null,
- radius double precision not null, next_radius double precision not null,
- phase_ends timestamptz, ends_at timestamptz, next_reveal timestamptz, next_shrink timestamptz,
- winner text, version bigint not null default 1, created_at timestamptz not null default now(),
- expires_at timestamptz not null default now()+interval '6 hours'
-);
-create table private.players (
- id uuid primary key default gen_random_uuid(), room uuid not null references private.rooms on delete cascade,
- uid uuid not null references auth.users on delete cascade, name text not null check(length(name) between 1 and 24),
- role text check(role in ('hider','seeker')), status text not null default 'lobby' check(status in ('lobby','active','eliminated','left')),
- ready boolean not null default false, heartbeat timestamptz not null default now(),
- gps_deadline timestamptz, reason text, joined_at timestamptz not null default now(),
- unique(room,uid)
-);
-create index players_uid on private.players(uid);
-create index players_room on private.players(room);
-create table private.locations (
- player uuid primary key references private.players on delete cascade,
- lat double precision not null check(lat between -90 and 90), lng double precision not null check(lng between -180 and 180),
- accuracy double precision not null check(accuracy between 0 and 10000),
- observed_at timestamptz not null, received_at timestamptz not null default now()
-);
-create table private.reveals (
- room uuid not null references private.rooms on delete cascade, player uuid not null references private.players on delete cascade,
- lat double precision not null, lng double precision not null, sampled_at timestamptz not null,
- expires_at timestamptz not null, primary key(room,player)
-);
-create table private.tags (
- id uuid primary key default gen_random_uuid(), room uuid not null references private.rooms on delete cascade,
- seeker uuid not null references private.players, hider uuid not null references private.players,
- expires_at timestamptz not null, status text not null default 'pending'
-);
-create unique index one_pending_tag on private.tags(hider) where status='pending';
-create table private.challenges (
- player uuid primary key references private.players on delete cascade, code text not null, expires_at timestamptz not null
-);
-create table private.events (
- id bigint generated always as identity primary key, room uuid not null references private.rooms on delete cascade,
- kind text not null, message text not null, at timestamptz not null default now()
-);
-create table private.limits (uid uuid not null, action text not null, bucket timestamptz not null, count int not null, primary key(uid,action));
--- The only published table contains NO coordinates, roles, tokens or private payloads.
-create table public.room_signals (room uuid primary key references private.rooms on delete cascade, version bigint not null default 1);
-alter table public.room_signals enable row level security;
-create function public.is_room_member(p_room uuid) returns boolean language sql stable security definer set search_path='' as $$
- select exists(select 1 from private.players where room=p_room and uid=auth.uid() and status<>'left');
-$$;
-create policy member_signal on public.room_signals for select to authenticated using(public.is_room_member(room));
-grant select on public.room_signals to authenticated;
-revoke all on public.room_signals from anon;
-do $$ begin alter publication supabase_realtime add table public.room_signals; exception when duplicate_object then null; end $$;
-
-create function private.distance(a double precision,b double precision,c double precision,d double precision) returns double precision
-language sql immutable set search_path='' as $$ select 6371000*2*asin(sqrt(least(1.0,power(sin(radians(c-a)/2),2)+cos(radians(a))*cos(radians(c))*power(sin(radians(d-b)/2),2)))); $$;
-create function private.emit(r uuid,k text,m text) returns void language plpgsql set search_path='' as $$ begin
- insert into private.events(room,kind,message) values(r,k,m);
- update private.rooms set version=version+1 where id=r;
- update public.room_signals set version=version+1 where room=r;
-end $$;
-create function private.rate(a text,max_count int,seconds int) returns void language plpgsql set search_path='' as $$
-declare n int; begin
- insert into private.limits(uid,action,bucket,count) values(auth.uid(),a,clock_timestamp(),1)
- on conflict(uid,action) do update set count=case when private.limits.bucket < clock_timestamp()-make_interval(secs=>seconds) then 1 else private.limits.count+1 end,
- bucket=case when private.limits.bucket < clock_timestamp()-make_interval(secs=>seconds) then clock_timestamp() else private.limits.bucket end returning count into n;
- if n>max_count then raise exception 'Too many attempts. Please wait a moment.'; end if;
-end $$;
-create function private.finish(r uuid,w text) returns void language plpgsql set search_path='' as $$ begin
- update private.rooms set phase='finished',winner=w,phase_ends=null,next_reveal=null,next_shrink=null,expires_at=clock_timestamp()+interval '1 hour' where id=r;
- delete from private.locations where player in(select id from private.players where room=r);
- delete from private.reveals where room=r;
- delete from private.challenges where player in(select id from private.players where room=r);
- update private.tags set status='expired' where room=r and status='pending';
- perform private.emit(r,'finished',upper(w)||' WIN');
-end $$;
-create function private.check_win(r uuid) returns void language plpgsql set search_path='' as $$ begin
- if not exists(select 1 from private.players where room=r and role='hider' and status='active') then perform private.finish(r,'seekers');
- elsif not exists(select 1 from private.players where room=r and role='seeker' and status='active') then
- update private.rooms set phase='cancelled',winner=null where id=r;
- delete from private.locations where player in(select id from private.players where room=r);
- delete from private.reveals where room=r;
- perform private.emit(r,'cancelled','Match cancelled: no seekers remain.');
- end if;
-end $$;
-create function private.eliminate(p uuid,why text) returns void language plpgsql set search_path='' as $$ declare r uuid; n text; begin
- update private.players set status='eliminated',reason=why,gps_deadline=null where id=p and status='active' returning room,name into r,n;
- if r is not null then
- delete from private.locations where player=p; delete from private.reveals where player=p; delete from private.challenges where player=p;
- update private.tags set status='expired' where (hider=p or seeker=p) and status='pending';
- perform private.emit(r,'eliminated',n||' · '||why);
- end if;
-end $$;
-
--- All callers lock the room. Advance before replacing locations so deadline snapshots
--- cannot use positions submitted after that deadline. The worker and commands share this path.
-create function private.advance(rid uuid) returns void language plpgsql set search_path='' as $$
+-- Fixes "column reference is ambiguous" errors (PL/pgSQL variable vs table alias) that
+-- broke creating a room and mid-game reveals. Run once in the Supabase SQL Editor on
+-- projects that already ran 001_game.sql. Safe to re-run; grants are preserved.
+create or replace function private.advance(rid uuid) returns void language plpgsql set search_path='' as $$
 declare r private.rooms; p record; t timestamptz:=clock_timestamp(); due timestamptz; radius_new double precision; new_host uuid; begin
  select * into r from private.rooms where id=rid for update;
  if not found then return; end if;
@@ -154,7 +54,7 @@ declare r private.rooms; p record; t timestamptz:=clock_timestamp(); due timesta
  delete from private.reveals where room=rid and expires_at<=t;
 end $$;
 
-create function public.game_command(p_action text,p_room uuid default null,p_data jsonb default '{}'::jsonb) returns jsonb
+create or replace function public.game_command(p_action text,p_room uuid default null,p_data jsonb default '{}'::jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare r private.rooms; me private.players; target private.players; s jsonb; rid uuid; pid uuid; c text; n int; t timestamptz:=clock_timestamp();
  tag private.tags; loc private.locations; other private.locations; lat float; lng float; acc float; observed timestamptz; begin
@@ -270,39 +170,3 @@ declare r private.rooms; me private.players; target private.players; s jsonb; ri
  perform private.emit(p_room,p_action,case when p_action='ready' then me.name||case when (p_data->>'ready')::boolean then ' is ready.' else ' is not ready.' end when p_action='settings' then 'Game settings updated.' when p_action='tag' then 'A tag was requested.' else 'Game updated.' end);
  return '{}'::jsonb;
 end $$;
-
-create function public.get_game(p_room uuid) returns jsonb language plpgsql security definer set search_path='' as $$
-declare r private.rooms; me private.players; result jsonb; t timestamptz:=clock_timestamp(); begin
- if auth.uid() is null then raise exception 'Sign in first.'; end if;
- select * into r from private.rooms where id=p_room for share;
- if not found or r.expires_at<=clock_timestamp() then raise exception 'Room expired.'; end if;
- select * into me from private.players where room=p_room and uid=auth.uid() and status<>'left';
- if not found then raise exception 'Room membership not found.'; end if;
- t:=clock_timestamp();
- select jsonb_build_object('id',r.id,'code',r.code,'me',me.id,'host',r.host,'phase',r.phase,'settings',r.settings,'center',jsonb_build_object('lat',r.lat,'lng',r.lng),
- 'radius',r.radius,'next_radius',r.next_radius,'phase_ends',r.phase_ends,'ends_at',r.ends_at,'next_reveal',r.next_reveal,'next_shrink',r.next_shrink,'winner',r.winner,'version',r.version,'server_time',t,'gps_deadline',me.gps_deadline,
- 'players',coalesce((select jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'role',p.role,'status',p.status,'ready',p.ready,'connected',p.heartbeat>t-interval '45 seconds','reason',p.reason) order by p.joined_at) from private.players p where p.room=p_room and p.status<>'left'),'[]'::jsonb),
- 'reveals',case when r.phase='hunting' and me.role='seeker' and me.status='active' then coalesce((select jsonb_agg(jsonb_build_object('id',v.player,'lat',v.lat,'lng',v.lng,'at',v.sampled_at)) from private.reveals v where v.room=p_room and v.expires_at>t),'[]'::jsonb) else '[]'::jsonb end,
- 'reveal_expires',case when r.phase='hunting' and me.role='seeker' and me.status='active' then(select max(expires_at) from private.reveals where room=p_room and expires_at>t) else null end,
- 'tags',coalesce((select jsonb_agg(jsonb_build_object('id',id,'seeker',seeker,'hider',hider,'expires',expires_at)) from private.tags where room=p_room and status='pending' and expires_at>t and (seeker=me.id or hider=me.id)),'[]'::jsonb),
- 'events',coalesce((select jsonb_agg(e order by e.id desc) from(select id,kind,message,at from private.events where room=p_room order by id desc limit 8)e),'[]'::jsonb)) into result;
- return result;
-end $$;
-
-create function private.tick() returns void language plpgsql security definer set search_path='' as $$ declare r record; begin
- for r in select id from private.rooms where phase in('lobby','hiding','hunting') and expires_at>clock_timestamp() for update skip locked loop perform private.advance(r.id); end loop;
-end $$;
-create function private.cleanup() returns void language plpgsql security definer set search_path='' as $$ begin
- delete from private.reveals where expires_at<now();
- delete from private.challenges where expires_at<now();
- delete from private.rooms where expires_at<now();
- delete from private.limits where bucket<now()-interval '1 day';
- delete from auth.users u where u.is_anonymous and u.created_at<now()-interval '1 day' and not exists(select 1 from private.players where uid=u.id);
- delete from cron.job_run_details where end_time<now()-interval '1 hour';
-end $$;
-revoke all on all tables in schema private from public,anon,authenticated;
-revoke all on all functions in schema private from public,anon,authenticated;
-revoke all on function public.game_command(text,uuid,jsonb),public.get_game(uuid),public.is_room_member(uuid) from public,anon;
-grant execute on function public.game_command(text,uuid,jsonb),public.get_game(uuid),public.is_room_member(uuid) to authenticated;
-select cron.schedule('tag-tick','1 second','select private.tick()');
-select cron.schedule('tag-cleanup','* * * * *','select private.cleanup()');

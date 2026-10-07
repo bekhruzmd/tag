@@ -13,12 +13,29 @@ import {
 } from "lucide-react";
 export default function Page() {
   const state = useGame();
-  const { game, room, error, setError, busy, enter, demo, act, leave } = state;
+  const {
+    game,
+    room,
+    error,
+    setError,
+    busy,
+    enter,
+    demo,
+    act,
+    leave,
+    sessionLost,
+    startFresh,
+  } = state;
   return (
     <>
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
+          {sessionLost && (
+            <button className="fresh-start" onClick={startFresh}>
+              Start fresh
+            </button>
+          )}
           <button aria-label="Dismiss message" onClick={() => setError("")}>
             <X size={18} />
           </button>

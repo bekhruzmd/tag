@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build --webpack",
     "start": "next start --hostname 0.0.0.0",
@@ -10,7 +12,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "test:db": "psql -v ON_ERROR_STOP=1 -f supabase/tests/game.sql",
     "format": "prettier --write src tests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:live": "node --env-file=.env.local scripts/live-smoke.mjs"
   },
   "dependencies": {
     "lucide-react": "1.47.0",
@@ -22,9 +25,9 @@
   "devDependencies": {
     "@playwright/test": "1.58.2",
     "@tailwindcss/postcss": "4.3.3",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "prettier": "^3.6.2",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.13",

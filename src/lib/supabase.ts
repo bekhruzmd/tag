@@ -20,6 +20,27 @@ function stored(): Session | null {
     return null;
   }
 }
+// Proxies and outages return HTML or empty bodies; never let that surface as a JSON parse error.
+async function readJson(response: Response) {
+  try {
+    return await response.json();
+  } catch {
+    return {
+      message: response.ok
+        ? "The game server sent an unreadable response."
+        : `Game server unavailable (${response.status}). Try again shortly.`,
+    };
+  }
+}
+// Refresh token was refused: the saved identity cannot recover on its own. The stored
+// session is kept (never silently replaced); the player chooses to start fresh.
+export function isSessionLost(e: unknown) {
+  return e instanceof Error && e.name === "SessionLost";
+}
+export function resetIdentity() {
+  for (const k of ["tag-session", "tag-room", "tag-pending-leave"])
+    localStorage.removeItem(k);
+}
 export async function authenticate(): Promise<Session> {
   if (!configured)
     throw new Error(
@@ -40,14 +61,18 @@ export async function authenticate(): Promise<Session> {
         ),
       },
     );
-    const data = await response.json();
-    if (!response.ok)
-      throw new Error(
+    const data = await readJson(response);
+    if (!response.ok) {
+      const error = new Error(
         data.msg ??
           data.message ??
           data.error_description ??
           "Could not sign in. Check anonymous Auth is enabled.",
       );
+      if (old && [400, 401, 403].includes(response.status))
+        error.name = "SessionLost";
+      throw error;
+    }
     const session = {
       ...data,
       expires_at: data.expires_at ?? Date.now() / 1000 + data.expires_in,
@@ -74,7 +99,7 @@ async function rpc(name: string, body: Record<string, unknown>) {
     cache: "no-store",
     signal: AbortSignal.timeout(15000),
   });
-  const data = await response.json();
+  const data = await readJson(response);
   if (!response.ok)
     throw new Error(data.message ?? "Could not reach the game server.");
   return data;

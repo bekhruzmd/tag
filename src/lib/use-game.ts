@@ -1,6 +1,12 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { subscribeRoom, command, getGame } from "./supabase";
+import {
+  subscribeRoom,
+  command,
+  getGame,
+  isSessionLost,
+  resetIdentity,
+} from "./supabase";
 import { Snapshot, Fix, distance } from "./types";
 import { advanceDemo, demoAction, demoGame } from "./demo";
 export function useGame() {
@@ -9,6 +15,7 @@ export function useGame() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [synced, setSynced] = useState(true),
+    [sessionLost, setSessionLost] = useState(false),
     [fix, setFix] = useState<Fix | null>(null),
     [gps, setGps] = useState("Waiting for location"),
     [now, setNow] = useState(Date.now()),
@@ -21,26 +28,36 @@ export function useGame() {
     lastSend = useRef<Fix | null>(null),
     leaving = useRef(false),
     sending = useRef(false),
-    generation = useRef(0);
-  const refresh = useCallback(async (id: string) => {
-    const gen = generation.current;
-    const started = Date.now();
-    try {
-      const data = (await getGame(id)) as Snapshot;
-      if (gen !== generation.current || leaving.current) return;
-      offset.current =
-        Date.parse(data.server_time) - (started + Date.now()) / 2;
-      lastSync.current = Date.now();
-      setSynced(true);
-      setGame((old) =>
-        !old || old.id !== data.id || data.version >= old.version ? data : old,
-      );
-    } catch (e) {
-      if (gen !== generation.current) return;
-      setSynced(false);
-      setError((e as Error).message);
-    }
+    generation = useRef(0),
+    realtime = useRef(false);
+  const fail = useCallback((e: unknown) => {
+    setError((e as Error).message);
+    if (isSessionLost(e)) setSessionLost(true);
   }, []);
+  const refresh = useCallback(
+    async (id: string) => {
+      const gen = generation.current;
+      const started = Date.now();
+      try {
+        const data = (await getGame(id)) as Snapshot;
+        if (gen !== generation.current || leaving.current) return;
+        offset.current =
+          Date.parse(data.server_time) - (started + Date.now()) / 2;
+        lastSync.current = Date.now();
+        setSynced(true);
+        setGame((old) =>
+          !old || old.id !== data.id || data.version >= old.version
+            ? data
+            : old,
+        );
+      } catch (e) {
+        if (gen !== generation.current) return;
+        setSynced(false);
+        fail(e);
+      }
+    },
+    [fail],
+  );
   useEffect(() => {
     const id = localStorage.getItem("tag-room");
     if (id) {
@@ -65,10 +82,16 @@ export function useGame() {
       room,
       () => void refresh(room),
       (connected) => {
+        realtime.current = connected;
         if (!connected) setSynced(false);
       },
     );
-    const poll = setInterval(() => void refresh(room), 5000);
+    // Realtime pushes changes; poll quickly only while it is down, slowly as a safety net.
+    let ticks = 0;
+    const poll = setInterval(() => {
+      ticks++;
+      if (!realtime.current || ticks % 4 === 0) void refresh(room);
+    }, 5000);
     const heartbeat = () =>
       void command("heartbeat", room).catch(() => setSynced(false));
     heartbeat();
@@ -84,6 +107,7 @@ export function useGame() {
     document.addEventListener("visibilitychange", visibility);
     return () => {
       generation.current++;
+      realtime.current = false;
       clearInterval(poll);
       clearInterval(beat);
       window.removeEventListener("online", visibility);
@@ -224,7 +248,7 @@ export function useGame() {
       setRoom(result.room);
       await refresh(result.room);
     } catch (e) {
-      setError((e as Error).message);
+      fail(e);
     } finally {
       setBusy(false);
     }
@@ -247,7 +271,7 @@ export function useGame() {
       await refresh(room);
       return true;
     } catch (e) {
-      setError((e as Error).message);
+      fail(e);
       return false;
     } finally {
       setBusy(false);
@@ -284,6 +308,17 @@ export function useGame() {
     window.addEventListener("online", retry);
     return () => window.removeEventListener("online", retry);
   }, []);
+  const startFresh = () => {
+    generation.current++;
+    resetIdentity();
+    setSessionLost(false);
+    setError("");
+    setRoom(null);
+    setGame(null);
+    setChallenge(null);
+    setFix(null);
+    setSynced(true);
+  };
   const demo = () => {
     offset.current = 0;
     leaving.current = false;
@@ -299,6 +334,8 @@ export function useGame() {
     setError,
     busy,
     synced,
+    sessionLost,
+    startFresh,
     fix,
     gps,
     now,

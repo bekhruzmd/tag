@@ -1,6 +1,6 @@
 # Validation — 2026-10-03
 
-Historical record. The app has since been deployed; see [AUDIT.md](../AUDIT.md) for current verification results and remaining work.
+Historical record from the initial implementation. The app has since been deployed, and verification has continued.
 
 Completed in this workspace:
 

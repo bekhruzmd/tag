@@ -67,11 +67,17 @@ test("transport retains identity, sends authenticated commands, refreshes tokens
     saved.expires_at = 1;
     values.set("tag-session", JSON.stringify(saved));
     denyRefresh = true;
-    await assert.rejects(api.authenticate(), /Refresh rejected/);
+    await assert.rejects(api.authenticate(), (e) => {
+      assert.match((e as Error).message, /Refresh rejected/);
+      assert.ok(api.isSessionLost(e), "rejected refresh is flagged as lost");
+      return true;
+    });
     assert.ok(
       values.has("tag-session"),
       "failed refresh must not silently replace player identity",
     );
+    api.resetIdentity();
+    assert.ok(!values.has("tag-session"), "starting fresh clears the identity");
   } finally {
     globalThis.fetch = original;
   }
