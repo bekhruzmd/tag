@@ -1,74 +1,138 @@
-# TAG — Campus hide & seek
+# TAG
 
-A mobile-first Next.js PWA for a real-world hide-and-seek game. Supabase Postgres owns role assignment, timers, safe zones, snapshots, tagging, eliminations, and results. No paid API, map key, custom domain, or app-store account is required.
+**Your campus. Your playground. Don’t get caught.**
 
-## Run the interface
+A real-world multiplayer hide-and-seek game. Gather your friends, share a room code, and head outside. Hiders stay out of sight while seekers chase brief location clues—all inside a shrinking safe zone.
+
+**[Play TAG →](https://usftag.vercel.app)**
+
+## How it works
+
+1. **Get your crew together.** Create a room, choose your settings, and share the six-character code. Games support 2–30 players.
+2. **Pick your side.** Once everyone is ready, the game randomly assigns seekers and gives hiders a head start.
+3. **Follow the clues.** Seekers see periodic location snapshots that disappear after five seconds by default.
+4. **Stay in the zone.** The safe zone shrinks as the game progresses. Staying outside it can eliminate a hider.
+5. **Confirm the catch.** A found hider shares a short-lived code. The seeker enters it, GPS checks proximity, and the hider confirms the tag.
+
+Seekers win if every hider is eliminated. Hiders win if anyone survives until time runs out.
+
+## Features
+
+- Room codes and anonymous sign-in—no email or password required.
+- Configurable head starts, hunt duration, reveals, zones, and tag distance.
+- Interactive maps with your position, safe zones, and temporary reveal markers.
+- Database-controlled roles, timers, eliminations, and results.
+- Reconnection support and sessions that persist across browser refreshes.
+- Installable PWA with an offline fallback and screen wake lock where supported.
+- Practice mode with simulated players, available without a backend.
+
+## Built with
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Maps | MapLibre GL and OpenStreetMap tiles |
+| Backend | Supabase Auth, PostgreSQL, Realtime, and Cron |
+| Hosting | Vercel |
+
+The browser uses a small native Fetch/WebSocket transport for Supabase. No map API key or additional Supabase SDK installation is needed for the current implementation.
+
+## Run locally
 
 ```sh
+git clone https://github.com/bekhruzmd/tag.git
+cd tag
 npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. **Try the practice demo** works without any backend. It has five simulated players, a 15-second head start, a three-minute hunt, 30-second reveals, and 45-second zone stages. The demo is explicitly labeled and is NOT a multiplayer server. Its tag button simulates mutual confirmation.
+Open [localhost:3000](http://localhost:3000) and choose **Try the practice demo**. Practice mode simulates a five-player game locally; it does not connect to other players.
 
-## Enable real multiplayer
+### Enable multiplayer
 
-1. Create a **Supabase Free** project directly on supabase.com. Do not select Pro or add paid integrations. Keep the project password private.
-2. In Authentication → Providers / Sign In, enable **Anonymous sign-ins**. No email or phone provider is needed. The app preserves an anonymous session across refreshes in the same browser. Clearing browser storage loses that identity.
-3. Open the SQL editor and run `supabase/migrations/001_game.sql` **once** in a new project. This installs the private schema, RPCs, RLS-protected notification table, and Cron jobs. If prompted, enable the free `pg_cron` extension. Never publish private tables to Realtime.
-4. Copy `.env.example` to `.env.local`. Set the project URL and the project's public **publishable / anon** key. Never put a service-role key, secret key, or database password in these variables.
-5. Restart the dev server. Create a room, share the code, and join from other browsers.
-6. Before a campus event, check Auth rate limits: anonymous signups default to 30/hour/IP. A shared campus NAT can exhaust that allowance. Raise it moderately for your expected group, and retain each player's existing session. This version has no CAPTCHA widget; enable one only after wiring its token into `authenticate()`.
+1. Create a Supabase project.
+2. Under **Authentication → Sign In / Providers**, enable **Anonymous sign-ins**.
+3. In the SQL Editor, run [`supabase/migrations/001_game.sql`](supabase/migrations/001_game.sql) **once in a new project**. This creates the game tables, access rules, functions, Realtime publication, and scheduled jobs. Enable `pg_cron` if prompted.
+4. Create your local environment file:
 
-## Deploy for $0
+   ```sh
+   cp .env.example .env.local
+   ```
 
-Create a personal **Vercel Hobby** project from this repository, using the Next.js preset. Add the two public environment variables from `.env.example` and deploy. Use the provided `*.vercel.app` URL; it provides HTTPS, required for phone geolocation. Create the Supabase project separately instead of purchasing it through a marketplace.
+5. Fill in the project URL and public publishable/anon key:
 
-Hobby is for personal/noncommercial use. Stay on Free/Hobby; capacity exhaustion should interrupt the demo rather than require upgrading. Check current provider terms before launch. Free Supabase projects can pause after inactivity; resume and smoke-test before the event.
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_PUBLISHABLE_OR_ANON_KEY
+   ```
 
-For local multi-phone testing, `http://<laptop-IP>:3000` does **not** generally qualify as a secure context for geolocation. Use the HTTPS Vercel deployment. Safari: Share → Add to Home Screen. Chrome: Install / Add to Home Screen.
+   Keep these exact variable names, including `ANON_KEY` when using a publishable key. Never use a secret key, service-role key, or database password here. `.env.local` is excluded from Git.
 
-## How to play
+6. Restart the dev server. Create a room in one browser and join from another browser or private window.
 
-- Host creates a room centered on their meeting point, sets the rules, and shares the six-character code.
-- Every player readies up. The host starts; the database randomly chooses seekers.
-- Seekers physically wait through the hiding countdown. Browser software cannot enforce that physical rule.
-- Keep the app visible. The app requests a screen wake lock when supported, but cannot guarantee background GPS.
-- The zone contracts over the final 60 seconds of each stage (or the full interval for shorter stages). The new boundary is enforced at the deadline, with up to 10m of GPS tolerance. After a shrink, the new boundary remains enforceable on fresh location submissions.
-- Reveal markers are immutable snapshots, visible to active seekers for five seconds by default. No hider live feed is sent to other players.
-- A found hider taps **I've been found**, shows their short-lived code, and the seeker enters it. Both must have fresh GPS within the configured tag distance (default 20m). The hider then confirms.
-- A hider without usable GPS receives bounded grace, then is eliminated. Leaving forfeits participation. All hiders out means seekers win; any surviving hider at expiry means hiders win.
-- Elimination, finish, and leave stop sharing. Spectators see no private live locations.
+To check that the scheduled jobs are installed, run this in Supabase's SQL Editor:
 
-## Commands
+```sql
+select jobname, schedule, active
+from cron.job;
+```
+
+Both `tag-tick` and `tag-cleanup` should be active. Check their run history for successful executions before hosting a game.
+
+## Deploy
+
+Import the GitHub repository into Vercel using the **Next.js** preset. Add the two environment variables above before deploying. Redeploy after changing their values.
+
+Use the HTTPS deployment for phone testing. A local address such as `http://<laptop-IP>:3000` generally cannot use phone geolocation. To install the app, use **Add to Home Screen** in Safari or **Install / Add to Home Screen** in Chrome.
+
+## Playing on phones
+
+- **Keep the app visible and stay online.** Background and locked-screen GPS are not supported. The offline page does not enable offline gameplay.
+- GPS accuracy affects tags and zone checks. Missing or poor location readings receive a limited grace period before elimination.
+- Hiders' positions are shared with active seekers only as temporary reveal snapshots. Other players do not receive a continuous hider location feed.
+- Leaving, elimination, and the end of a game stop location sharing. Current coordinates are removed on the server; no movement history is kept.
+- Clearing browser storage loses your anonymous identity. Keep the same browser session during a game.
+
+## Development checks
 
 ```sh
 npm run typecheck
 npm test
 npm run build
+```
+
+Run the browser tests with Playwright:
+
+```sh
+npx playwright install chromium
 npm run test:e2e
 ```
 
-The build uses Webpack to avoid Turbopack's IPC requirements in restricted environments. E2E tests launch a local dev server, so need permission to listen on localhost and an installed Playwright Chromium (`npx playwright install chromium`).
-
-Database integration checks must run against an **isolated development Supabase database**, never a live game:
+Run database integration tests against an **isolated development Supabase database** with the migration already applied:
 
 ```sh
 psql "$TAG_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/game.sql
 ```
 
-The integration script runs in a transaction and rolls back its fixtures. It exercises permissions, role assignment, hiding/hunting transitions, snapshots and expiry, mutual tagging, zone elimination, and winning. The migration must already be applied.
+The SQL tests run in a transaction and roll back their fixtures. They cover permissions, roles, phase transitions, reveal expiry, tagging, zone elimination, and game results.
 
-## Implementation
+## Project structure
 
-- `src/components/`: home, lobby, game map/HUD, and the original SVG campus illustration.
-- `src/lib/use-game.ts`: session, reconnect, GPS, wake lock, and command orchestration.
-- `src/lib/supabase.ts`: small Auth/PostgREST/Realtime transport with native browser APIs. The official SDK is not required; realtime updates have a five-second state-poll fallback.
-- `src/lib/demo.ts`: isolated practice simulation. Production commands cannot reach it.
-- `supabase/migrations/001_game.sql`: trusted game engine and access boundary.
-- `docs/architecture.md`: timing, data, security, and privacy details.
-- `docs/field-test.md`: real-phone acceptance checklist.
+```text
+src/app/                 Pages, layout, styles, and PWA manifest
+src/components/          Home, lobby, map, and gameplay UI
+src/lib/                 Game state, Supabase transport, and practice simulation
+supabase/migrations/     Database game engine and access controls
+supabase/tests/          Database integration tests
+tests/                   Unit and browser tests
+public/                  Icons, service worker, and offline page
+docs/                    Architecture and testing notes
+```
 
-## Validation status
+## Project status
 
-See `docs/validation.md` for checks performed and environment limitations. A successful frontend build does not certify a deployed Supabase game. Complete the database tests and five-phone field test before calling this ready for an event.
+TAG is an early campus-game MVP deployed at [usftag.vercel.app](https://usftag.vercel.app). Type checking, six unit tests, and the production build have passed. Database integration tests, browser E2E tests, and outdoor multiplayer acceptance still need verification; deployment alone does not validate the full game.
+
+Before an event, complete the [five-phone acceptance test](docs/field-test.md), then test the expected player count. Before a broader public launch, wire CAPTCHA into anonymous sign-in, review signup limits for shared campus Wi-Fi, and strengthen the current basic rate limits. GPS spoofing and player collusion are outside this MVP's protections.
+
+See the [architecture notes](docs/architecture.md) for game logic and privacy details, and the [earlier validation record](docs/validation.md) for the initial testing history.
