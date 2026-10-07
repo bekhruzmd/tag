@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GeoJSONSource, Map as LibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { MAP_STYLE } from "@/lib/map-config";
+import { MAP_STYLE, recolor } from "@/lib/map-config";
 import { circle } from "@/lib/types";
 const feature = (lng: number, lat: number, meters: number) => ({
   type: "Feature" as const,
@@ -46,6 +46,7 @@ export default function RadiusPreview({
     }
     map.current = m;
     m.on("load", () => {
+      recolor(m);
       for (const id of ["outer", "inner"])
         m.addSource(id, {
           type: "geojson",
@@ -55,21 +56,21 @@ export default function RadiusPreview({
         id: "outer-fill",
         type: "fill",
         source: "outer",
-        paint: { "fill-color": "#bce76b", "fill-opacity": 0.1 },
+        paint: { "fill-color": "#7fe7ff", "fill-opacity": 0.1 },
       });
       m.addLayer({
         id: "outer-line",
         type: "line",
         source: "outer",
-        paint: { "line-color": "#c5f45c", "line-width": 2.5 },
+        paint: { "line-color": "#7fe7ff", "line-width": 3 },
       });
       m.addLayer({
         id: "inner-line",
         type: "line",
         source: "inner",
         paint: {
-          "line-color": "#e9f4ce",
-          "line-width": 1.5,
+          "line-color": "#ffffff",
+          "line-width": 2,
           "line-dasharray": [3, 3],
         },
       });

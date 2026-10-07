@@ -169,7 +169,7 @@ export function useGame() {
     const onError = (e: GeolocationPositionError) =>
       setGps(
         e.code === 1
-          ? "Location permission denied — enable it in browser settings"
+          ? "Location permission denied. Enable it in browser settings"
           : "Waiting for a usable GPS signal",
       );
     const options = {

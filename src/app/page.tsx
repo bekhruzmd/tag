@@ -3,14 +3,8 @@ import { useGame } from "@/lib/use-game";
 import Home, { Brand } from "@/components/home";
 import Lobby from "@/components/lobby";
 import Gameplay from "@/components/gameplay";
-import {
-  ArrowRight,
-  Flag,
-  LoaderCircle,
-  Shield,
-  Trophy,
-  X,
-} from "lucide-react";
+import { ArrowRight, LoaderCircle, X } from "lucide-react";
+import { Ticker } from "@/components/pixel";
 export default function Page() {
   const state = useGame();
   const {
@@ -37,7 +31,7 @@ export default function Page() {
             </button>
           )}
           <button aria-label="Dismiss message" onClick={() => setError("")}>
-            <X size={18} />
+            <X size={18} strokeWidth={3} />
           </button>
         </div>
       )}
@@ -45,9 +39,18 @@ export default function Page() {
         <Home enter={enter} demo={demo} busy={busy} />
       ) : !game ? (
         <main className="loading-screen">
-          <Brand />
-          <LoaderCircle className="spin" />
-          <h1>Finding your crew…</h1>
+          <div className="console">
+            <div className="console-top">
+              <span className="icon-button light" aria-hidden="true" />
+              <Brand />
+              <span className="icon-button light" aria-hidden="true" />
+            </div>
+            <div className="code-screen">
+              <LoaderCircle className="spin" size={34} strokeWidth={3} />
+              <h1>Connecting to the room</h1>
+            </div>
+            <Ticker>LOADING</Ticker>
+          </div>
           <button className="secondary" onClick={() => void leave()}>
             Back to home
           </button>
@@ -56,59 +59,52 @@ export default function Page() {
         <Lobby game={game} busy={busy} act={act} leave={leave} />
       ) : ["finished", "cancelled"].includes(game.phase) ? (
         <div className="results-screen">
-          <Brand />
-          <div className="results-symbol">
-            {game.phase === "cancelled" ? (
-              <Flag size={48} />
-            ) : (
-              <Trophy size={52} />
-            )}
-          </div>
-          <div className="eyebrow">
-            {game.id === "demo" ? "PRACTICE COMPLETE" : "THAT’S A WRAP"}
-          </div>
-          <h1>
-            {game.phase === "cancelled" ? (
-              "Match cancelled."
-            ) : (
-              <>
-                {game.winner}
-                <br />
-                <span>take the win.</span>
-              </>
-            )}
-          </h1>
-          <p>
-            {game.phase === "cancelled"
-              ? "There are no active seekers left. Gather your crew for a new round."
-              : game.winner === "hiders"
-                ? "Out of sight. Out of time. The hiders made it."
-                : "Nowhere left to hide. The seekers found their finish."}
-          </p>
-          <div className="result-stats">
-            <div>
-              <strong>{game.players.length}</strong>
-              <span>PLAYERS</span>
+          <div className="console">
+            <div className="console-top">
+              <span className="icon-button light" aria-hidden="true" />
+              <Brand />
+              <span className="icon-button light" aria-hidden="true" />
             </div>
-            <div>
-              <strong>
-                {
-                  game.players.filter(
-                    (p) => p.role === "hider" && p.status === "active",
-                  ).length
-                }
-              </strong>
-              <span>HIDERS SURVIVED</span>
+            <div className="code-screen">
+              <span className="label">
+                {game.id === "demo" ? "PRACTICE ROUND OVER" : "ROUND OVER"}
+              </span>
+              <h1>
+                {game.phase === "cancelled" ? (
+                  "Match cancelled."
+                ) : (
+                  <>
+                    {(game.winner ?? "").replace(/^./, (c) => c.toUpperCase())}{" "}
+                    take the win.
+                  </>
+                )}
+              </h1>
+              <p>
+                {game.phase === "cancelled"
+                  ? "There are no active seekers left. Start a new round to play again."
+                  : game.winner === "hiders"
+                    ? "The hiders lasted until time ran out."
+                    : "The seekers tagged every hider."}
+              </p>
+              {game.phase !== "cancelled" && (
+                <p className="result-line">
+                  {game.players.length} players,{" "}
+                  {
+                    game.players.filter(
+                      (p) => p.role === "hider" && p.status === "active",
+                    ).length
+                  }{" "}
+                  hiders left at the end.
+                </p>
+              )}
             </div>
+            <Ticker>LOCATION SHARING HAS STOPPED</Ticker>
           </div>
-          <button className="primary" onClick={() => void leave()}>
+          <button className="primary big-action" onClick={() => void leave()}>
             Back to base
-            <ArrowRight size={18} />
+            <ArrowRight size={20} strokeWidth={3} />
           </button>
-          <small className="privacy-end">
-            <Shield size={14} />
-            Location sharing has stopped.
-          </small>
+          <small className="privacy-end">Location sharing has stopped.</small>
         </div>
       ) : (
         <Gameplay {...state} game={game} />

@@ -1,36 +1,37 @@
 "use client";
 import { useState } from "react";
 import {
-  ArrowUpRight,
   ArrowRight,
   Plus,
   Hash,
-  MapPin,
-  Shield,
+  Menu,
   Radio,
-  Users,
   ChevronLeft,
   LocateFixed,
   LoaderCircle,
   Check,
 } from "lucide-react";
 import CampusArt from "./campus-art";
+import { Sprite, Ticker, ZoneRadar } from "./pixel";
+import { CROSSHAIR } from "@/lib/pixel-art";
 import { configured } from "@/lib/supabase";
 // Only the landing page links home. Inside a room a full reload would just restore the
 // same screen from localStorage, so the wordmark stays plain text there.
+// Title plaque. Only the landing page links home; inside a room a reload would just
+// restore the same screen from localStorage.
 export function Brand({ link = false }: { link?: boolean }) {
   const mark = (
     <>
-      tag<span className="brand-dot">.</span>
-      <span className="brand-cross">⌖</span>
+      <span>TAG</span>
+      <Sprite rows={CROSSHAIR} px={3} palette={{ o: "#bfe6ff" }} />
     </>
   );
   return link ? (
-    <a href="/" className="brand" aria-label="TAG home">
+    <a href="/" className="plaque" aria-label="TAG home">
       {mark}
     </a>
   ) : (
-    <span className="brand" role="img" aria-label="TAG">
+    <span className="plaque" role="img" aria-label="TAG">
       {mark}
     </span>
   );
@@ -76,280 +77,222 @@ export default function Home({
   };
   return (
     <div className="landing">
-      <header className="site-header">
-        <Brand link />
-        <div className="header-right">
-          <span className="status-dot" /> OUTSIDE IS THE NEW ONLINE{" "}
-          <span className="version-pill">BETA 01</span>
+      <div className="console">
+        <div className="console-top">
+          <a
+            href="#rules"
+            className="icon-button"
+            aria-label="How a round works"
+          >
+            <Menu size={24} strokeWidth={3} />
+          </a>
+          <Brand link />
+          <span className="icon-button light" aria-hidden="true">
+            <Radio size={24} strokeWidth={3} />
+          </span>
         </div>
-      </header>
-      <main className="landing-main">
-        <section className="hero-copy">
-          <div className="eyebrow">
-            <span className="mini-cross">+</span> REAL-WORLD MULTIPLAYER
-          </div>
-          {mode === "home" ? (
-            <>
-              <h1>
-                Your campus.
-                <br />
-                Your playground.
-                <br />
-                <span>Don’t get caught.</span>
-              </h1>
-              <p className="hero-description">
-                Hide in plain sight. Chase your friends. Outrun the zone.
-                <br className="desktop-break" /> The game is on your phone. The
-                action is all around you.
-              </p>
-              <div className="entry-actions">
-                <button
-                  className="primary big-action"
-                  onClick={() => setMode("create")}
-                >
-                  <Plus size={21} />
-                  Create a game
-                  <ArrowUpRight className="end-icon" size={21} />
-                </button>
-                <button
-                  className="secondary big-action"
-                  onClick={() => setMode("join")}
-                >
-                  <Hash size={21} />
-                  Join with code
-                  <ArrowRight className="end-icon" size={21} />
-                </button>
-              </div>
-              <div className="hero-meta">
-                <span>
-                  <Users size={14} /> 2–30 players
-                </span>
-                <span>
-                  <MapPin size={14} /> Play anywhere
-                </span>
-                <span>
-                  <Shield size={14} /> No downloads
-                </span>
-              </div>
-              <button className="text-button demo-link" onClick={demo}>
-                Get a feel for it <ArrowRight size={15} />
-                <span>TRY THE PRACTICE DEMO</span>
-              </button>
-            </>
-          ) : (
-            <div className="entry-form">
-              <button
-                className="text-button back-link"
-                onClick={() => setMode("home")}
-              >
-                <ChevronLeft size={17} />
-                Back to base
-              </button>
-              <h1>
-                {mode === "create" ? (
-                  <>
-                    Round up
-                    <br />
-                    <span>your people.</span>
-                  </>
-                ) : (
-                  <>
-                    Got the code?
-                    <br />
-                    <span>You’re in.</span>
-                  </>
-                )}
-              </h1>
-              <p className="hero-description">
-                {mode === "create"
-                  ? "Set the meeting point. Invite your friends. Make a run for it."
-                  : "Meet your group at the play area before you ready up."}
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void enter(mode, { name, code, ...center });
-                }}
-              >
-                <label>
-                  Your callsign
-                  <input
-                    autoComplete="nickname"
-                    placeholder="What should we call you?"
-                    maxLength={24}
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </label>
-                {mode === "join" ? (
-                  <label>
-                    Room code
-                    <input
-                      className="code-input"
-                      autoCapitalize="characters"
-                      autoComplete="off"
-                      placeholder="A1B2C3"
-                      minLength={6}
-                      maxLength={6}
-                      required
-                      value={code}
-                      onChange={(e) =>
-                        setCode(
-                          e.target.value
-                            .toUpperCase()
-                            .replace(/[^A-Z0-9]/g, ""),
-                        )
-                      }
-                    />
-                  </label>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="location-picker"
-                      onClick={locate}
-                      disabled={locating}
-                    >
-                      {locating ? (
-                        <LoaderCircle className="spin" size={20} />
-                      ) : center ? (
-                        <Check size={20} />
-                      ) : (
-                        <LocateFixed size={20} />
-                      )}
-                      <span>
-                        {center
-                          ? "Meeting point set"
-                          : "Use my location as the meeting point"}
-                        <small>
-                          {center
-                            ? `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`
-                            : "Choose a safe, open area on campus"}
-                        </small>
-                      </span>
-                    </button>
-                    {gpsMessage && <p className="inline-error">{gpsMessage}</p>}
-                  </>
-                )}
-                <label className="consent">
-                  <input
-                    type="checkbox"
-                    required
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                  />
-                  <span>
-                    I’ll keep the game visible and share location during the
-                    match. Leaving stops sharing.
-                  </span>
-                </label>
-                <button
-                  className="primary full"
-                  disabled={busy || !consent || (mode === "create" && !center)}
-                >
-                  {busy ? (
-                    <LoaderCircle className="spin" size={18} />
-                  ) : mode === "create" ? (
-                    <Plus size={18} />
-                  ) : (
-                    <ArrowRight size={18} />
-                  )}{" "}
-                  {busy
-                    ? "Connecting…"
-                    : mode === "create"
-                      ? "Create lobby"
-                      : "Join lobby"}
-                </button>
-              </form>
-              {!configured && (
-                <div className="setup-note">
-                  <Radio size={16} />
-                  <span>
-                    Multiplayer setup pending. Connect Supabase using the
-                    README, or{" "}
-                    <button onClick={demo}>try the practice demo</button>.
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-        <section
-          className="hero-map"
-          aria-label="Illustration of a campus game"
-        >
+        <div className="map-bezel art-bezel" aria-hidden="true">
           <CampusArt />
-          <div className="map-topline">
-            <span>
-              <i /> FIELD VIEW
-            </span>
-            <span>ILLUSTRATIVE MAP ↗</span>
+          <div className="radar-slot">
+            <ZoneRadar
+              center={{ lat: 0, lng: 0 }}
+              radius={100}
+              nextRadius={62}
+              fix={null}
+              fallbackToCenter
+            />
           </div>
-          <div className="map-coordinate">40°43′46.2″N &nbsp; 73°59′47.4″W</div>
-          <div className="floating-callout">
-            <div className="callout-icon">
-              <Radio size={21} />
+        </div>
+        <Ticker>GPS ON. SCREEN ON. GO OUTSIDE.</Ticker>
+      </div>
+      <main className="landing-main">
+        {mode === "home" ? (
+          <>
+            <h1>Hide and seek on your campus.</h1>
+            <p className="hero-description">
+              One group hides and one group seeks. A safe circle on the map
+              keeps shrinking, so nobody can stay put. You play outside, on your
+              phone, with people you can actually see.
+            </p>
+            <div className="entry-actions">
+              <button
+                className="primary big-action"
+                onClick={() => setMode("create")}
+              >
+                Create a game
+              </button>
+              <button
+                className="primary big-action"
+                onClick={() => setMode("join")}
+              >
+                Join with code
+              </button>
             </div>
-            <div>
-              <span>STAY ONE STEP AHEAD</span>
-              <strong>They only get a glimpse.</strong>
-              <p>Your location. Revealed for 5 seconds.</p>
-            </div>
+            <p className="hero-meta">
+              2 to 30 players. Needs GPS. Nothing to install.
+            </p>
+            <button className="text-button demo-link" onClick={demo}>
+              <span className="u">Try practice mode</span>
+              <ArrowRight size={16} strokeWidth={3} />
+            </button>
+            <p className="hero-meta">Simulated players, no account needed.</p>
+          </>
+        ) : (
+          <div className="entry-form">
+            <button
+              className="text-button back-link"
+              onClick={() => setMode("home")}
+            >
+              <ChevronLeft size={18} strokeWidth={3} />
+              Back to base
+            </button>
+            <h1>{mode === "create" ? "Start a room" : "Join a room"}</h1>
+            <p className="hero-description">
+              {mode === "create"
+                ? "Pick the meeting point, then share the code with your group."
+                : "Get the 6-character code from the host and meet them at the play area."}
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void enter(mode, { name, code, ...center });
+              }}
+            >
+              <label>
+                Your callsign
+                <input
+                  autoComplete="nickname"
+                  placeholder="What should we call you?"
+                  maxLength={24}
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </label>
+              {mode === "join" ? (
+                <label>
+                  Room code
+                  <input
+                    className="code-input"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    placeholder="A1B2C3"
+                    minLength={6}
+                    maxLength={6}
+                    required
+                    value={code}
+                    onChange={(e) =>
+                      setCode(
+                        e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+                      )
+                    }
+                  />
+                </label>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="location-picker"
+                    onClick={locate}
+                    disabled={locating}
+                  >
+                    {locating ? (
+                      <LoaderCircle
+                        className="spin"
+                        size={22}
+                        strokeWidth={3}
+                      />
+                    ) : center ? (
+                      <Check size={22} strokeWidth={3} />
+                    ) : (
+                      <LocateFixed size={22} strokeWidth={3} />
+                    )}
+                    <span>
+                      {center
+                        ? "Meeting point set"
+                        : "Use my location as the meeting point"}
+                      <small>
+                        {center
+                          ? `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`
+                          : "Pick a safe, open area"}
+                      </small>
+                    </span>
+                  </button>
+                  {gpsMessage && <p className="inline-error">{gpsMessage}</p>}
+                </>
+              )}
+              <label className="consent">
+                <input
+                  type="checkbox"
+                  required
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                />
+                <span>
+                  I’ll keep the game visible and share my location during the
+                  match. Leaving stops sharing.
+                </span>
+              </label>
+              <button
+                className="primary full"
+                disabled={busy || !consent || (mode === "create" && !center)}
+              >
+                {busy ? (
+                  <LoaderCircle className="spin" size={20} strokeWidth={3} />
+                ) : mode === "create" ? (
+                  <Plus size={20} strokeWidth={3} />
+                ) : (
+                  <ArrowRight size={20} strokeWidth={3} />
+                )}{" "}
+                {busy
+                  ? "Connecting…"
+                  : mode === "create"
+                    ? "Create lobby"
+                    : "Join lobby"}
+              </button>
+            </form>
+            {!configured && (
+              <div className="setup-note">
+                <Radio size={18} strokeWidth={3} />
+                <span>
+                  Multiplayer setup pending. Connect Supabase using the README,
+                  or <button onClick={demo}>try practice mode</button>.
+                </span>
+              </div>
+            )}
           </div>
-          <div className="map-bottomline">
-            <span>
-              <i className="legend-green" />
-              YOU
-            </span>
-            <span>
-              <i className="legend-orange" />
-              REVEAL SNAPSHOT
-            </span>
-            <span>⌖</span>
-          </div>
-        </section>
+        )}
       </main>
-      <section className="how-section">
-        <div className="how-heading">
-          <span className="eyebrow">LESS SCROLLING. MORE RUNNING.</span>
-          <h2>One campus. Two sides. No standing still.</h2>
-        </div>
-        <div className="how-grid">
-          <article>
-            <span className="step-number">01 /</span>
-            <Users size={23} />
-            <h3>Get your crew together</h3>
-            <p>
-              Create a room, share the code, and meet outside. The game picks
-              your side.
-            </p>
-          </article>
-          <article>
-            <span className="step-number">02 /</span>
-            <Radio size={23} />
-            <h3>Hide. Seek. Make your move.</h3>
-            <p>
-              Hiders get a head start. Seekers get brief location clues. Finding
-              them is on you.
-            </p>
-          </article>
-          <article>
-            <span className="step-number">03 /</span>
-            <MapPin size={23} />
-            <h3>The circle gets smaller</h3>
-            <p>
-              Stay in the safe zone. Confirm a tag face to face. Last hider
-              standing wins it.
-            </p>
-          </article>
-        </div>
+      <section id="rules" className="rules">
+        <h2>How a round works</h2>
+        <ul>
+          <li>
+            The host creates a room and shares the code. Everyone meets at the
+            spot the host picked.
+          </li>
+          <li>
+            When the host starts, a few players are chosen as seekers and the
+            rest hide. Hiders get a head start.
+          </li>
+          <li>
+            At each reveal, seekers see where every hider was a few seconds ago.
+            It is a snapshot, not a live feed.
+          </li>
+          <li>
+            The safe circle shrinks on a timer, and a hider caught outside it is
+            out.
+          </li>
+          <li>
+            A tag only counts when the seeker types the code on the hider’s
+            phone and the hider confirms. The round ends when no hiders are left
+            or time runs out.
+          </li>
+        </ul>
       </section>
       <footer className="site-footer">
-        <span>MADE FOR THE REAL WORLD.</span>
+        <span>Location is shared only while a game is running.</span>
         <span>
-          No downloads. No paywalls. Just one more round.
-          <ArrowUpRight size={15} />
+          Map data from OpenStreetMap contributors, served by OpenFreeMap.
         </span>
       </footer>
     </div>

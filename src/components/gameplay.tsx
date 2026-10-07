@@ -16,6 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { Ticker, ZoneRadar } from "./pixel";
 import { Snapshot, Fix, countdown, clock } from "@/lib/types";
 const GameMap = dynamic(() => import("./game-map"), {
   ssr: false,
@@ -86,6 +87,19 @@ export default function Gameplay({
     const timer = setTimeout(() => setAnnouncement(""), 2600);
     return () => clearTimeout(timer);
   }, [game.phase, me.role]);
+  const tickerText = eliminated
+    ? "YOU ARE OUT. SPECTATING"
+    : hiding
+      ? seeking
+        ? "HEAD START. HOLD AT THE MEETING POINT"
+        : "HIDE. STAY INSIDE THE CIRCLE"
+      : reveal <= 10
+        ? `REVEAL IN ${reveal}`
+        : visibleReveal || justRevealed
+          ? "LOCATIONS REVEALED"
+          : zoneClosing
+            ? `ZONE CLOSING IN ${zone}S`
+            : "THE HUNT IS ON";
   const gpsProblem =
     game.id !== "demo" &&
     !eliminated &&
@@ -97,21 +111,8 @@ export default function Gameplay({
   }, [gpsAlarm]);
   return (
     <div className="game-screen">
-      <GameMap game={game} fix={fix} now={now} />
-      <div className="game-vignette" />
-      <header className="game-top">
-        <div className="game-top-row">
-          <span className="game-wordmark">tag.</span>
-          <span className={`role-chip ${seeking ? "seeker" : ""}`}>
-            {eliminated ? (
-              <Eye size={14} />
-            ) : seeking ? (
-              <Target size={14} />
-            ) : (
-              <Shield size={14} />
-            )}{" "}
-            {eliminated ? "SPECTATOR" : me.role?.toUpperCase()}
-          </span>
+      <div className="console game-console">
+        <div className="console-top">
           <button
             className="icon-button"
             aria-label="Leave game"
@@ -120,121 +121,148 @@ export default function Gameplay({
                 void leave();
             }}
           >
-            <LogOut size={18} />
+            <LogOut size={22} strokeWidth={3} />
           </button>
-        </div>
-        <div className="game-timer">
-          <span>{hiding ? "HEAD START" : "TIME TO SURVIVE"}</span>
-          <strong>{clock(countdown(game.phase_ends, now))}</strong>
-        </div>
-        <div className="game-status-row">
-          <button onClick={() => setShowRoster(!showRoster)}>
-            <Users size={15} />
-            {alive}/{total} hiders
-            <ChevronDown size={14} />
-          </button>
-          <span>
-            <i className={synced ? "status-dot" : "status-dot orange"} />
-            {game.id === "demo" ? "PRACTICE" : synced ? "LIVE" : "RECONNECTING"}
+          <div className="plaque timer-plaque" role="timer">
+            <span className="label">{hiding ? "HEAD START" : "TIME LEFT"}</span>
+            <strong>{clock(countdown(game.phase_ends, now))}</strong>
+          </div>
+          <span
+            className={`icon-button role ${eliminated ? "out" : seeking ? "seeker" : "hider"}`}
+            role="img"
+            aria-label={eliminated ? "Spectator" : `Role: ${me.role}`}
+          >
+            {eliminated ? (
+              <Eye size={24} strokeWidth={3} />
+            ) : seeking ? (
+              <Target size={24} strokeWidth={3} />
+            ) : (
+              <Shield size={24} strokeWidth={3} />
+            )}
           </span>
         </div>
-      </header>
-      {!synced && (
-        <div className="connection-banner">
-          Connection interrupted. Actions are unavailable until synced.
-        </div>
-      )}
-      {announcement && (
-        <div
-          className="phase-announcement"
-          aria-live="polite"
-          key={announcement}
-        >
-          <span>THIS IS YOUR MOMENT</span>
-          <h1>{announcement}</h1>
-          <p>
-            {seeking
-              ? "Eyes up. Let them hide. Then go find them."
-              : "Find your spot. Keep your next move ready."}
-          </p>
-        </div>
-      )}
-      {showRoster && (
-        <section className="game-roster panel">
-          <div className="panel-heading">
-            <h2>The field</h2>
-            <button
-              className="icon-button"
-              aria-label="Close player list"
-              onClick={() => setShowRoster(false)}
-            >
-              <X size={16} />
-            </button>
+        <div className="map-bezel">
+          <GameMap game={game} fix={fix} now={now} />
+          <div className="radar-slot">
+            <ZoneRadar
+              center={game.center}
+              radius={game.radius}
+              nextRadius={game.next_radius}
+              fix={fix}
+              fallbackToCenter={game.id === "demo"}
+              reveals={visibleReveal ? game.reveals : []}
+            />
           </div>
-          {game.players.map((p) => (
-            <div className="compact-player" key={p.id}>
-              <span>
-                {p.name}
-                {p.id === me.id ? " (you)" : ""}
-              </span>
-              <small>
-                {p.status === "eliminated" ? "OUT" : p.role?.toUpperCase()}
-              </small>
+          {!synced && (
+            <div className="connection-banner" role="status">
+              Connection lost. Actions are paused until it is back.
             </div>
-          ))}
-        </section>
-      )}
+          )}
+          {announcement && (
+            <div
+              className="phase-announcement"
+              aria-live="polite"
+              key={announcement}
+            >
+              <h1>{announcement}</h1>
+              <p>
+                {game.phase === "hunting"
+                  ? "Seekers can tag now. The circle keeps shrinking."
+                  : seeking
+                    ? "Hiders have a head start. Wait at the meeting point."
+                    : "Get inside the circle and out of sight."}
+              </p>
+            </div>
+          )}
+          {showRoster && (
+            <section className="game-roster panel">
+              <div className="panel-heading">
+                <h2>Players</h2>
+                <button
+                  className="icon-button small"
+                  aria-label="Close player list"
+                  onClick={() => setShowRoster(false)}
+                >
+                  <X size={18} strokeWidth={3} />
+                </button>
+              </div>
+              {game.players.map((p) => (
+                <div className="compact-player" key={p.id}>
+                  <span>
+                    {p.name}
+                    {p.id === me.id ? " (you)" : ""}
+                  </span>
+                  <small>
+                    {p.status === "eliminated" ? "OUT" : p.role?.toUpperCase()}
+                  </small>
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+        <Ticker>{tickerText}</Ticker>
+      </div>
       <div className="game-bottom">
+        <div className="game-status-row">
+          <button onClick={() => setShowRoster(!showRoster)}>
+            <Users size={18} strokeWidth={3} />
+            {alive}/{total} hiders left
+          </button>
+          <span className="led-status">
+            <i className={synced ? "led" : "led off"} />
+            {game.id === "demo"
+              ? "PRACTICE"
+              : synced
+                ? "CONNECTED"
+                : "RECONNECTING"}
+          </span>
+        </div>
         {game.id === "demo" && (
           <div className="practice-label">
-            PRACTICE MODE · SIMULATED GPS & PLAYERS
+            PRACTICE MODE · SIMULATED GPS AND PLAYERS
           </div>
         )}
         {eliminated ? (
           <div className="game-message">
-            <Eye size={22} />
             <div>
-              <strong>You’re out. The chase goes on.</strong>
+              <strong>You’re out. The game goes on without you.</strong>
               <p>{me.reason}. Location sharing has stopped.</p>
             </div>
           </div>
         ) : hiding ? (
           <div className="game-message">
-            <Shield size={22} />
             <div>
               <strong>
                 {seeking
-                  ? "Give them a head start."
-                  : "Make yourself hard to find."}
+                  ? "Give the hiders a head start."
+                  : "Get out of sight."}
               </strong>
               <p>
                 {seeking
                   ? "Stay at the meeting point until the hunt begins."
-                  : "Your location is hidden. Stay within the circle."}
+                  : "Your location is hidden. Stay inside the circle."}
               </p>
             </div>
           </div>
         ) : reveal <= 10 ? (
           <div className="game-message urgent">
-            <Radio size={23} />
             <div>
-              <strong>LOCATION REVEAL IN {reveal}</strong>
+              <strong>Location reveal in {reveal}</strong>
               <p>
                 {seeking
-                  ? "Watch for a snapshot. They won’t stay there."
-                  : "Make your next move count."}
+                  ? "Watch the map. They will have moved on."
+                  : "Move before the next reveal."}
               </p>
             </div>
           </div>
         ) : visibleReveal || justRevealed ? (
           <div className="game-message urgent">
-            <ScanLine size={23} />
             <div>
-              <strong>LOCATION REVEALED</strong>
+              <strong>Locations revealed</strong>
               <p>
                 {seeking
-                  ? "Orange markers show where they were, not where they are."
-                  : "Your position was shared. Time to make your next move."}
+                  ? "Orange stars show where they were, not where they are."
+                  : "Your position was shared. Move."}
               </p>
             </div>
           </div>

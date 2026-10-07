@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Snapshot, Settings, NumericSetting, presetFor } from "@/lib/types";
 import { Brand } from "./home";
+import { Ticker } from "./pixel";
 const RadiusPreview = dynamic(() => import("./radius-preview"), {
   ssr: false,
   loading: () => <div className="radius-preview" />,
@@ -151,59 +152,65 @@ export default function Lobby({
   ];
   return (
     <div className="room-shell">
-      <header className="site-header">
-        <Brand />
-        <button className="text-button muted" onClick={() => void leave()}>
-          <LogOut size={16} />
-          Leave lobby
-        </button>
-      </header>
-      <main className="lobby-main">
-        <div className="lobby-intro">
-          <div>
-            <div className="eyebrow">
-              <span className="status-dot" />
-              {game.id === "demo"
-                ? "PRACTICE · SIMULATED PLAYERS"
-                : "THE PRE-GAME"}
-            </div>
-            <h1>
-              Assemble the crew<span>.</span>
-            </h1>
-            <p>Meet at the play area. Ready up. Let the chase begin.</p>
-          </div>
-          <div className="room-code">
-            <span>YOUR ROOM CODE</span>
-            <button
-              aria-label="Copy room code"
-              onClick={() => {
-                void navigator.clipboard
-                  ?.writeText(game.code)
-                  .then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  })
-                  .catch(() => {});
-              }}
-            >
-              {game.code}
-              {copied ? <Check size={20} /> : <Copy size={20} />}
-            </button>
-            <small>
-              {copied
-                ? "Copied. Send it to your friends."
-                : "Share this code with your friends."}
-            </small>
-          </div>
+      <div className="console">
+        <div className="console-top">
+          <button
+            className="icon-button"
+            aria-label="Leave lobby"
+            onClick={() => void leave()}
+          >
+            <LogOut size={22} strokeWidth={3} />
+          </button>
+          <Brand />
+          <span className="icon-button light" aria-label={`${players} players`}>
+            <b>{players}</b>
+          </span>
         </div>
+        <div className="code-screen">
+          {game.id === "demo" && (
+            <span className="label">PRACTICE · SIMULATED PLAYERS</span>
+          )}
+          <span className="label">ROOM CODE</span>
+          <button
+            className="code-button"
+            aria-label="Copy room code"
+            onClick={() => {
+              void navigator.clipboard
+                ?.writeText(game.code)
+                .then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                })
+                .catch(() => {});
+            }}
+          >
+            {game.code}
+            {copied ? (
+              <Check size={26} strokeWidth={3} />
+            ) : (
+              <Copy size={26} strokeWidth={3} />
+            )}
+          </button>
+          <small>
+            {copied
+              ? "Copied. Send it to your group."
+              : "Everyone joins with this code."}
+          </small>
+        </div>
+        <Ticker>
+          {ready === players
+            ? "EVERYONE IS READY"
+            : `${ready} OF ${players} READY`}
+        </Ticker>
+      </div>
+      <main className="lobby-main">
         <div className="lobby-columns">
           <section className="panel roster">
             <div className="panel-heading">
               <h2>
-                <Users size={18} />
-                The lineup <span>{game.players.length}/30</span>
+                Players <span>{game.players.length}/30</span>
               </h2>
-              <span className="small-mono">{ready} READY</span>
+              <span className="small-mono">{ready} ready</span>
             </div>
             <div className="player-list">
               {game.players.map((p, i) => (
@@ -242,16 +249,13 @@ export default function Lobby({
               ))}
             </div>
             <div className="empty-slots">
-              <span>+</span>There’s room for more. Send out the code.
+              Up to 30 players. Share the room code.
             </div>
           </section>
           <aside className="lobby-aside">
             <section className="panel">
               <div className="panel-heading">
-                <h2>
-                  <Settings2 size={18} />
-                  Game plan
-                </h2>
+                <h2>Rules</h2>
                 {host && (
                   <button
                     className="text-button small"
@@ -415,21 +419,18 @@ export default function Lobby({
                 </div>
               )}
             </section>
-            <div className="lobby-notice">
-              <Shield size={21} />
-              <div>
-                <strong>Your location stays yours.</strong>
-                <p>
-                  Seekers only see brief snapshots during reveals. Keep this app
-                  open during the game.
-                </p>
-              </div>
-            </div>
-            <div className="location-caption">
-              <MapPin size={14} />
-              {game.center.lat.toFixed(4)}, {game.center.lng.toFixed(4)} ·
-              meeting point
-            </div>
+            <p className="lobby-notice">
+              <Shield size={20} strokeWidth={3} />
+              <span>
+                Your location is shared only during the game. Seekers get a
+                short snapshot at each reveal, never a live feed.
+              </span>
+            </p>
+            <p className="location-caption">
+              <MapPin size={16} strokeWidth={3} />
+              Meeting point {game.center.lat.toFixed(4)},{" "}
+              {game.center.lng.toFixed(4)}
+            </p>
           </aside>
         </div>
         <div className="lobby-bottom">
@@ -438,8 +439,8 @@ export default function Lobby({
             <span>
               <strong>
                 {ready === game.players.length
-                  ? "Everyone’s ready. Let’s do this."
-                  : "Waiting for the crew to ready up."}
+                  ? "Everyone is ready."
+                  : "Waiting for everyone to ready up."}
               </strong>
               <small>
                 {game.id === "demo"
