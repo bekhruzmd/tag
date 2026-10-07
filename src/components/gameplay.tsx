@@ -88,17 +88,17 @@ export default function Gameplay({
     return () => clearTimeout(timer);
   }, [game.phase, me.role]);
   const tickerText = eliminated
-    ? "YOU ARE OUT. SPECTATING"
+    ? "YOU ARE OUT"
     : hiding
       ? seeking
-        ? "HEAD START. HOLD AT THE MEETING POINT"
-        : "HIDE. STAY INSIDE THE CIRCLE"
+        ? "HEAD START. HOLD HERE"
+        : "HIDE. STAY IN THE CIRCLE"
       : reveal <= 10
         ? `REVEAL IN ${reveal}`
         : visibleReveal || justRevealed
           ? "LOCATIONS REVEALED"
           : zoneClosing
-            ? `ZONE CLOSING IN ${zone}S`
+            ? `ZONE CLOSES IN ${zone}S`
             : "THE HUNT IS ON";
   const tickerTone: "info" | "warn" | "alert" | "dim" = eliminated
     ? "dim"
@@ -149,6 +149,20 @@ export default function Gameplay({
               <Shield size={24} strokeWidth={3} />
             )}
           </span>
+        </div>
+        <div className="countdown-grid">
+          <div>
+            <span>ZONE</span>
+            <strong>{game.next_shrink ? clock(zone) : "FINAL"}</strong>
+            <small>
+              {Math.round(game.radius)}
+              {game.next_shrink ? `>${Math.round(game.next_radius)}` : ""}m
+            </small>
+          </div>
+          <div>
+            <span>REVEAL</span>
+            <strong>{clock(reveal)}</strong>
+          </div>
         </div>
         <div className="map-bezel">
           <GameMap game={game} fix={fix} now={now} />
@@ -237,26 +251,6 @@ export default function Gameplay({
           </div>
         )}
         <div className="game-control-card">
-          <div className="countdown-grid">
-            <div>
-              <span>
-                <MapPin size={13} />
-                SAFE ZONE
-              </span>
-              <strong>{game.next_shrink ? clock(zone) : "FINAL ZONE"}</strong>
-              <small>
-                {Math.round(game.radius)}m
-                {game.next_shrink ? ` → ${Math.round(game.next_radius)}m` : ""}
-              </small>
-            </div>
-            <div>
-              <span>
-                <Radio size={13} />
-                NEXT REVEAL
-              </span>
-              <strong>{clock(reveal)}</strong>
-            </div>
-          </div>
           {!hiding &&
             !eliminated &&
             (pending ? (
