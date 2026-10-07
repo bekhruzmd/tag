@@ -36,9 +36,11 @@ export const Runner = ({ px = 4 }: { px?: number }) => (
 export function Ticker({
   children,
   mascot = true,
+  tone = "info",
 }: {
   children: React.ReactNode;
   mascot?: boolean;
+  tone?: "info" | "warn" | "alert" | "dim" | "good";
 }) {
   return (
     <div className="ticker-row">
@@ -47,7 +49,7 @@ export function Ticker({
           <Runner px={4} />
         </span>
       )}
-      <p className="ticker" aria-live="polite">
+      <p className={`ticker tone-${tone}`} aria-live="polite">
         {children}
         <span className="cursor" aria-hidden="true" />
       </p>

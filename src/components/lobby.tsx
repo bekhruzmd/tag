@@ -191,13 +191,9 @@ export default function Lobby({
               <Copy size={26} strokeWidth={3} />
             )}
           </button>
-          <small>
-            {copied
-              ? "Copied. Send it to your group."
-              : "Everyone joins with this code."}
-          </small>
+          <small>{copied ? "Copied" : "Tap to copy"}</small>
         </div>
-        <Ticker>
+        <Ticker tone={ready === players ? "good" : "info"}>
           {ready === players
             ? "EVERYONE IS READY"
             : `${ready} OF ${players} READY`}
@@ -214,7 +210,10 @@ export default function Lobby({
             </div>
             <div className="player-list">
               {game.players.map((p, i) => (
-                <div key={p.id} className="player-row">
+                <div
+                  key={p.id}
+                  className={`player-row ${p.id === me.id ? "me" : ""}`}
+                >
                   <div className={`avatar avatar-${i % 4}`}>
                     {p.name.slice(0, 2).toUpperCase()}
                   </div>
@@ -222,18 +221,18 @@ export default function Lobby({
                     <strong>
                       {p.name} {p.id === me.id && <small>YOU</small>}
                     </strong>
-                    <span>
-                      {p.id === game.host ? (
-                        <>
-                          <Crown size={11} />
-                          Host
-                        </>
-                      ) : p.connected ? (
-                        "In the lobby"
-                      ) : (
-                        "Reconnecting…"
-                      )}
-                    </span>
+                    {(p.id === game.host || !p.connected) && (
+                      <span>
+                        {p.id === game.host ? (
+                          <>
+                            <Crown size={13} strokeWidth={3} />
+                            Host
+                          </>
+                        ) : (
+                          "Reconnecting…"
+                        )}
+                      </span>
+                    )}
                   </div>
                   <span className={`ready-pill ${p.ready ? "is-ready" : ""}`}>
                     {p.ready ? (
@@ -247,9 +246,6 @@ export default function Lobby({
                   </span>
                 </div>
               ))}
-            </div>
-            <div className="empty-slots">
-              Up to 30 players. Share the room code.
             </div>
           </section>
           <aside className="lobby-aside">
@@ -329,23 +325,14 @@ export default function Lobby({
                       ))}
                     </div>
                   )}
-                  {game.presets && (
-                    <p className="preset-note">
-                      {settings.preset === "auto"
-                        ? `Sized automatically for the final head count when you start (${players} now).`
-                        : "Custom values. Pick Auto to size by player count again."}
-                    </p>
-                  )}
                   <RadiusPreview
                     center={game.center}
                     radius={settings.radius}
                     minRadius={settings.min_radius}
                   />
                   <p className="preview-caption">
-                    Safe zone {Math.round(settings.radius * 2)} m across · about{" "}
-                    {Math.max(1, Math.round((settings.radius * 2) / 1.4 / 60))}{" "}
-                    min to walk edge to edge · closes to{" "}
-                    {Math.round(settings.min_radius * 2)} m
+                    Safe zone {Math.round(settings.radius * 2)} m across ·
+                    closes to {Math.round(settings.min_radius * 2)} m
                   </p>
                   {fields.map((f) => (
                     <label key={f.key}>
@@ -412,43 +399,14 @@ export default function Lobby({
                   </div>
                   <div>
                     <span>Seekers</span>
-                    <strong>
-                      {Math.max(1, seekerCount)} randomly assigned
-                    </strong>
+                    <strong>{Math.max(1, seekerCount)}</strong>
                   </div>
                 </div>
               )}
             </section>
-            <p className="lobby-notice">
-              <Shield size={20} strokeWidth={3} />
-              <span>
-                Your location is shared only during the game. Seekers get a
-                short snapshot at each reveal, never a live feed.
-              </span>
-            </p>
-            <p className="location-caption">
-              <MapPin size={16} strokeWidth={3} />
-              Meeting point {game.center.lat.toFixed(4)},{" "}
-              {game.center.lng.toFixed(4)}
-            </p>
           </aside>
         </div>
         <div className="lobby-bottom">
-          <div>
-            <Radio size={22} />
-            <span>
-              <strong>
-                {ready === game.players.length
-                  ? "Everyone is ready."
-                  : "Waiting for everyone to ready up."}
-              </strong>
-              <small>
-                {game.id === "demo"
-                  ? "Demo uses a 15-second head start and simulated GPS."
-                  : "Roles are assigned when the host starts the game."}
-              </small>
-            </span>
-          </div>
           {locationMessage && (
             <p className="inline-error" role="alert">
               {locationMessage}
@@ -456,7 +414,7 @@ export default function Lobby({
           )}
           <div className="lobby-buttons">
             <button
-              className={me.ready ? "secondary" : "primary"}
+              className={me.ready ? "primary green" : "primary yellow"}
               disabled={busy || checking}
               onClick={toggleReady}
             >
@@ -469,7 +427,7 @@ export default function Lobby({
             </button>
             {host && (
               <button
-                className="primary"
+                className="primary green"
                 disabled={
                   busy ||
                   game.players.length < 2 ||

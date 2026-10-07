@@ -100,6 +100,13 @@ export default function Gameplay({
           : zoneClosing
             ? `ZONE CLOSING IN ${zone}S`
             : "THE HUNT IS ON";
+  const tickerTone: "info" | "warn" | "alert" | "dim" = eliminated
+    ? "dim"
+    : zoneClosing
+      ? "alert"
+      : reveal <= 10 || visibleReveal || justRevealed
+        ? "warn"
+        : "info";
   const gpsProblem =
     game.id !== "demo" &&
     !eliminated &&
@@ -111,7 +118,9 @@ export default function Gameplay({
   }, [gpsAlarm]);
   return (
     <div className="game-screen">
-      <div className="console game-console">
+      <div
+        className={`console game-console ${eliminated ? "out" : seeking ? "seeker" : "hider"}`}
+      >
         <div className="console-top">
           <button
             className="icon-button"
@@ -155,7 +164,7 @@ export default function Gameplay({
           </div>
           {!synced && (
             <div className="connection-banner" role="status">
-              Connection lost. Actions are paused until it is back.
+              Connection lost.
             </div>
           )}
           {announcement && (
@@ -165,13 +174,6 @@ export default function Gameplay({
               key={announcement}
             >
               <h1>{announcement}</h1>
-              <p>
-                {game.phase === "hunting"
-                  ? "Seekers can tag now. The circle keeps shrinking."
-                  : seeking
-                    ? "Hiders have a head start. Wait at the meeting point."
-                    : "Get inside the circle and out of sight."}
-              </p>
             </div>
           )}
           {showRoster && (
@@ -192,7 +194,9 @@ export default function Gameplay({
                     {p.name}
                     {p.id === me.id ? " (you)" : ""}
                   </span>
-                  <small>
+                  <small
+                    className={`role-tag ${p.status === "eliminated" ? "out" : p.role}`}
+                  >
                     {p.status === "eliminated" ? "OUT" : p.role?.toUpperCase()}
                   </small>
                 </div>
@@ -200,13 +204,13 @@ export default function Gameplay({
             </section>
           )}
         </div>
-        <Ticker>{tickerText}</Ticker>
+        <Ticker tone={tickerTone}>{tickerText}</Ticker>
       </div>
       <div className="game-bottom">
         <div className="game-status-row">
           <button onClick={() => setShowRoster(!showRoster)}>
             <Users size={18} strokeWidth={3} />
-            {alive}/{total} hiders left
+            {alive}/{total} hiders
           </button>
           <span className="led-status">
             <i className={synced ? "led" : "led off"} />
@@ -217,75 +221,19 @@ export default function Gameplay({
                 : "RECONNECTING"}
           </span>
         </div>
-        {game.id === "demo" && (
-          <div className="practice-label">
-            PRACTICE MODE · SIMULATED GPS AND PLAYERS
-          </div>
-        )}
-        {eliminated ? (
-          <div className="game-message">
-            <div>
-              <strong>You’re out. The game goes on without you.</strong>
-              <p>{me.reason}. Location sharing has stopped.</p>
-            </div>
-          </div>
-        ) : hiding ? (
-          <div className="game-message">
-            <div>
-              <strong>
-                {seeking
-                  ? "Give the hiders a head start."
-                  : "Get out of sight."}
-              </strong>
-              <p>
-                {seeking
-                  ? "Stay at the meeting point until the hunt begins."
-                  : "Your location is hidden. Stay inside the circle."}
-              </p>
-            </div>
-          </div>
-        ) : reveal <= 10 ? (
-          <div className="game-message urgent">
-            <div>
-              <strong>Location reveal in {reveal}</strong>
-              <p>
-                {seeking
-                  ? "Watch the map. They will have moved on."
-                  : "Move before the next reveal."}
-              </p>
-            </div>
-          </div>
-        ) : visibleReveal || justRevealed ? (
-          <div className="game-message urgent">
-            <div>
-              <strong>Locations revealed</strong>
-              <p>
-                {seeking
-                  ? "Orange stars show where they were, not where they are."
-                  : "Your position was shared. Move."}
-              </p>
-            </div>
-          </div>
-        ) : null}
-        {zoneClosing && !eliminated && (
-          <div className="zone-warning">
-            <MapPin size={14} />
-            <span>
-              ZONE CLOSING · {zone}s to reach the {Math.round(game.next_radius)}
-              m circle
-            </span>
-          </div>
+        {eliminated && (
+          <p className="game-message">
+            <strong>You are out.</strong> {me.reason}.
+          </p>
         )}
         {gpsProblem && (
           <div className="gps-alert" role="alert">
-            {gps}. Move to open sky, check location permission, and keep this
-            screen on.
+            {gps}. Move to open sky.
           </div>
         )}
         {game.gps_deadline && !eliminated && (
           <div className="gps-alert">
-            Location check needed · {clock(countdown(game.gps_deadline, now))}{" "}
-            to reconnect with usable GPS.
+            Location needed · {clock(countdown(game.gps_deadline, now))}
           </div>
         )}
         <div className="game-control-card">
@@ -307,7 +255,6 @@ export default function Gameplay({
                 NEXT REVEAL
               </span>
               <strong>{clock(reveal)}</strong>
-              <small>{game.settings.reveal_duration}-second snapshot</small>
             </div>
           </div>
           {!hiding &&
@@ -318,7 +265,7 @@ export default function Gameplay({
                   {game.players.find((p) => p.id === pending.seeker)?.name}{" "}
                   found you.
                 </strong>
-                <p>Confirm only if you’ve met face to face.</p>
+                <p>Confirm only if face to face.</p>
                 <div>
                   <button
                     className="secondary"
@@ -328,7 +275,7 @@ export default function Gameplay({
                     Not a tag
                   </button>
                   <button
-                    className="primary"
+                    className="primary green"
                     disabled={busy || !synced}
                     onClick={() => void act("confirm", { id: pending.id })}
                   >
@@ -352,7 +299,7 @@ export default function Gameplay({
                     }}
                   >
                     <label>
-                      Enter the code shown on the hider’s phone
+                      Hider’s code
                       <input
                         autoFocus
                         aria-label="Hider tag code"
@@ -372,7 +319,10 @@ export default function Gameplay({
                       >
                         Cancel
                       </button>
-                      <button className="primary" disabled={busy || !synced}>
+                      <button
+                        className="primary red"
+                        disabled={busy || !synced}
+                      >
                         Request tag
                         <ArrowRight size={17} />
                       </button>
@@ -380,7 +330,7 @@ export default function Gameplay({
                   </form>
                 ) : (
                   <button
-                    className="primary full tag-button"
+                    className="primary red full tag-button"
                     disabled={busy || !synced}
                     onClick={() =>
                       game.id === "demo" ? void act("tag") : setTagging(true)
@@ -398,16 +348,15 @@ export default function Gameplay({
               <>
                 {challenge && Date.parse(challenge.expires) > now ? (
                   <div className="challenge-code">
-                    <span>SHOW THIS TO YOUR SEEKER</span>
+                    <span>SHOW YOUR SEEKER</span>
                     <strong>{challenge.code}</strong>
                     <small>
-                      Expires in {countdown(challenge.expires, now)}s · Keep
-                      both phones nearby
+                      Expires in {countdown(challenge.expires, now)}s
                     </small>
                   </div>
                 ) : (
                   <button
-                    className="secondary full tag-button"
+                    className="primary yellow full tag-button"
                     disabled={busy || !synced}
                     onClick={() => void act("challenge")}
                   >

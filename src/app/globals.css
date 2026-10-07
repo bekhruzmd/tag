@@ -12,6 +12,16 @@
   --frame: #2d86c4;
   --frame-hi: #6cc3f2;
   --frame-lo: #1a5a93;
+  --yellow: #ffd23f;
+  --yellow-hi: #ffe98a;
+  --yellow-lo: #c79a0a;
+  --green-hi: #8be3a1;
+  --green-lo: #1f7a3a;
+  --red-hi: #ff7a7a;
+  --red-lo: #9c1f1f;
+  --blue: #3aa0e0;
+  --blue-hi: #8fd0ff;
+  --blue-lo: #1d6aa8;
   --orange: #ff9a2f;
   --orange-hi: #ffc77a;
   --orange-lo: #c0600f;
@@ -72,7 +82,7 @@ body {
   margin: 0;
   min-height: 100dvh;
   font-family: var(--font-ui), "Courier New", monospace;
-  font-size: 24px;
+  font-size: 16px;
   line-height: 1.5;
   background-color: var(--page);
   background-image:
@@ -117,14 +127,14 @@ b {
   font-weight: 400;
 }
 h1 {
-  font-size: clamp(42px, 9vw, 66px);
+  font-size: 32px;
   line-height: 1.05;
   font-weight: 700;
   color: #fff;
   text-shadow: 3px 3px 0 var(--frame-lo);
 }
 h2 {
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.2;
   font-weight: 700;
 }
@@ -133,9 +143,9 @@ h2 {
   image-rendering: pixelated;
 }
 .label {
-  font-family: var(--font-label), monospace;
-  font-size: 12px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--muted);
 }
 .spin {
@@ -212,7 +222,7 @@ h2 {
     inset 0 -4px 0 0 #9fb0d4;
 }
 .icon-button.light b {
-  font-family: var(--font-label), monospace;
+  font-family: var(--font-ui), monospace;
   font-size: 16px;
 }
 .icon-button.role.seeker::before {
@@ -247,9 +257,9 @@ h2 {
   max-width: 100%;
   background: var(--screen);
   color: #bfe6ff;
-  font-size: 38px;
+  font-size: 40px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 2px;
   text-shadow: 3px 3px 0 var(--frame-lo);
   box-shadow:
     var(--notch),
@@ -264,11 +274,11 @@ h2 {
   text-shadow: none;
 }
 .timer-plaque .label {
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-size: 16px;
+  letter-spacing: 2px;
 }
 .timer-plaque strong {
-  font-family: var(--font-led), monospace;
+  font-family: var(--font-ui), monospace;
   font-weight: 400;
   font-size: 40px;
   line-height: 0.9;
@@ -293,9 +303,9 @@ h2 {
   padding: 4px 14px;
   background: #070d1f;
   color: var(--cyan);
-  font-family: var(--font-led), monospace;
-  font-size: 26px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-ui), monospace;
+  font-size: 24px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   line-height: 1.05;
   box-shadow:
@@ -380,8 +390,8 @@ h2 {
   max-width: calc(100% - 150px);
   background: #0a1230 !important;
   color: var(--muted) !important;
-  font-family: var(--font-label), monospace !important;
-  font-size: 9px !important;
+  font-family: var(--font-ui), monospace !important;
+  font-size: 16px !important;
 }
 .maplibregl-ctrl-attrib a {
   color: var(--cyan) !important;
@@ -446,7 +456,7 @@ h2 {
 }
 .radar-n {
   fill: var(--cyan);
-  font-family: var(--font-label), monospace;
+  font-family: var(--font-ui), monospace;
   font-size: 7px;
   font-weight: 700;
 }
@@ -470,7 +480,7 @@ h2 {
   background: #4a2208;
   color: #ffd9a8;
   padding: 10px 12px;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.35;
   box-shadow: inset 0 0 0 4px var(--orange-lo);
 }
@@ -499,15 +509,40 @@ h2 {
   padding: 8px 20px;
   font-size: 24px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   color: var(--ink);
 }
 .primary {
-  background: var(--orange);
+  --b: var(--orange);
+  --bh: var(--orange-hi);
+  --bl: var(--orange-lo);
+  background: var(--b);
   box-shadow:
     var(--notch),
-    inset 0 4px 0 0 var(--orange-hi),
-    inset 0 -6px 0 0 var(--orange-lo);
+    inset 0 4px 0 0 var(--bh),
+    inset 0 -6px 0 0 var(--bl);
+}
+.primary.green {
+  --b: var(--green);
+  --bh: var(--green-hi);
+  --bl: var(--green-lo);
+}
+.primary.yellow {
+  --b: var(--yellow);
+  --bh: var(--yellow-hi);
+  --bl: var(--yellow-lo);
+}
+.primary.blue {
+  --b: var(--blue);
+  --bh: var(--blue-hi);
+  --bl: var(--blue-lo);
+}
+.primary.red {
+  --b: var(--red);
+  --bh: var(--red-hi);
+  --bl: var(--red-lo);
+  color: #fff;
+  text-shadow: 2px 2px 0 var(--red-lo);
 }
 .secondary {
   background: #cfd8ec;
@@ -520,8 +555,8 @@ h2 {
   transform: translateY(2px);
   box-shadow:
     var(--notch),
-    inset 0 4px 0 0 var(--orange-lo),
-    inset 0 -2px 0 0 var(--orange-hi);
+    inset 0 4px 0 0 var(--bl),
+    inset 0 -2px 0 0 var(--bh);
 }
 .secondary:active:not(:disabled) {
   transform: translateY(2px);
@@ -530,6 +565,7 @@ h2 {
 .secondary:disabled {
   background: #55658a;
   color: #c3cde4;
+  text-shadow: none;
   box-shadow:
     var(--notch),
     inset 0 4px 0 0 #7385ad,
@@ -538,7 +574,7 @@ h2 {
 .big-action {
   min-height: 64px;
   padding: 8px 10px;
-  font-size: 26px;
+  font-size: 24px;
   letter-spacing: 0;
 }
 .full {
@@ -557,7 +593,7 @@ h2 {
 }
 .text-button.small {
   min-height: 36px;
-  font-size: 20px;
+  font-size: 16px;
 }
 .demo-link {
   text-decoration: none;
@@ -572,7 +608,7 @@ h2 {
 label {
   display: grid;
   gap: 6px;
-  font-size: 22px;
+  font-size: 24px;
 }
 form {
   display: grid;
@@ -602,9 +638,9 @@ input::placeholder {
   color: #6d86b3;
 }
 .code-input {
-  font-family: var(--font-led), monospace;
-  font-size: 36px;
-  letter-spacing: 0.3em;
+  font-family: var(--font-ui), monospace;
+  font-size: 32px;
+  letter-spacing: 8px;
   text-align: center;
 }
 input[type="checkbox"] {
@@ -627,7 +663,7 @@ input[type="checkbox"]:checked {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 20px;
+  font-size: 16px;
   color: var(--muted);
 }
 .location-picker {
@@ -646,17 +682,17 @@ input[type="checkbox"]:checked {
 .location-picker small {
   display: block;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .inline-error {
   color: #ffb27a;
-  font-size: 18px;
+  font-size: 16px;
 }
 .setup-note {
   display: flex;
   gap: 10px;
   margin-top: 18px;
-  font-size: 18px;
+  font-size: 16px;
   color: var(--muted);
 }
 .setup-note button {
@@ -693,7 +729,7 @@ input[type="checkbox"]:checked {
 }
 .hero-meta {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .demo-link {
   margin-top: 8px;
@@ -739,7 +775,7 @@ input[type="checkbox"]:checked {
   gap: 4px;
   margin: 28px 4px 0;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* ---------- lobby ---------- */
@@ -757,14 +793,14 @@ input[type="checkbox"]:checked {
     inset 0 0 0 8px var(--frame-lo);
 }
 .code-screen h1 {
-  font-size: clamp(38px, 8vw, 54px);
+  font-size: 32px;
 }
 .code-screen p {
   color: var(--muted);
 }
 .code-screen small {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .result-line {
   color: var(--text);
@@ -775,9 +811,9 @@ input[type="checkbox"]:checked {
   gap: 14px;
   min-height: 64px;
   color: var(--cyan);
-  font-family: var(--font-led), monospace;
-  font-size: clamp(48px, 15vw, 72px);
-  letter-spacing: 0.2em;
+  font-family: var(--font-ui), monospace;
+  font-size: 32px;
+  letter-spacing: 8px;
   line-height: 1;
 }
 .lobby-main {
@@ -807,9 +843,9 @@ input[type="checkbox"]:checked {
 }
 .panel-heading h2 span,
 .small-mono {
-  font-family: var(--font-label), monospace;
-  font-size: 12px;
-  letter-spacing: 0.1em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--muted);
   font-weight: 400;
 }
@@ -830,8 +866,8 @@ input[type="checkbox"]:checked {
   width: 40px;
   height: 40px;
   color: var(--ink);
-  font-family: var(--font-label), monospace;
-  font-size: 13px;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
   font-weight: 700;
   background: var(--orange);
   box-shadow: 0 0 0 3px var(--ink);
@@ -858,8 +894,8 @@ input[type="checkbox"]:checked {
 }
 .player-name small {
   margin-left: 6px;
-  font-family: var(--font-label), monospace;
-  font-size: 10px;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
   color: var(--cyan);
 }
 .player-name span {
@@ -867,15 +903,15 @@ input[type="checkbox"]:checked {
   align-items: center;
   gap: 4px;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .ready-pill {
   flex: none;
   padding: 2px 8px;
   background: var(--line);
   color: var(--muted);
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
 }
 .ready-pill.is-ready {
   background: var(--green);
@@ -889,7 +925,7 @@ input[type="checkbox"]:checked {
   padding-top: 10px;
   border-top: 4px solid var(--screen);
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .settings-summary {
   margin-top: 10px;
@@ -917,7 +953,7 @@ input[type="checkbox"]:checked {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 20px;
+  font-size: 16px;
 }
 .settings-form label > div {
   display: flex;
@@ -928,7 +964,7 @@ input[type="checkbox"]:checked {
 .settings-form input {
   width: 90px;
   min-height: 44px;
-  font-size: 22px;
+  font-size: 24px;
   padding: 6px 10px;
 }
 .settings-form label span {
@@ -956,8 +992,8 @@ input[type="checkbox"]:checked {
     inset 0 0 0 4px var(--line);
 }
 .preset-row button small {
-  font-family: var(--font-label), monospace;
-  font-size: 10px;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
   font-weight: 400;
 }
 .preset-row button.is-active {
@@ -971,7 +1007,7 @@ input[type="checkbox"]:checked {
 .preset-note,
 .preview-caption {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.5;
 }
 .radius-preview {
@@ -994,7 +1030,7 @@ input[type="checkbox"]:checked {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .lobby-notice,
 .location-caption {
@@ -1002,12 +1038,12 @@ input[type="checkbox"]:checked {
   align-items: flex-start;
   gap: 10px;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .location-caption {
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   align-items: center;
 }
 .lobby-bottom {
@@ -1027,7 +1063,7 @@ input[type="checkbox"]:checked {
 .lobby-bottom small {
   display: block;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .lobby-bottom > .inline-error {
   line-height: 1.5;
@@ -1072,13 +1108,13 @@ input[type="checkbox"]:checked {
   animation: pop 300ms steps(3) both;
 }
 .phase-announcement h1 {
-  font-size: clamp(32px, 7vw, 44px);
+  font-size: 32px;
   color: var(--orange);
   text-shadow: none;
 }
 .phase-announcement p {
   margin-top: 6px;
-  font-size: 20px;
+  font-size: 16px;
   color: var(--text);
 }
 @keyframes pop {
@@ -1105,8 +1141,8 @@ input[type="checkbox"]:checked {
   border-top: 4px solid var(--screen);
 }
 .compact-player small {
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
   color: var(--muted);
 }
 .game-bottom {
@@ -1137,9 +1173,9 @@ input[type="checkbox"]:checked {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--muted);
 }
 .led,
@@ -1154,14 +1190,14 @@ input[type="checkbox"]:checked {
   background: var(--orange);
 }
 .practice-label {
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--orange);
 }
 .game-message strong {
   display: block;
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1.2;
 }
 .game-message p {
@@ -1176,9 +1212,9 @@ input[type="checkbox"]:checked {
   align-items: center;
   gap: 8px;
   color: var(--orange);
-  font-family: var(--font-label), monospace;
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
 }
 .game-control-card {
   display: grid;
@@ -1186,6 +1222,7 @@ input[type="checkbox"]:checked {
 }
 .countdown-grid {
   display: grid;
+  align-items: start;
   grid-template-columns: 1fr 1fr;
 }
 .countdown-grid > div {
@@ -1202,21 +1239,21 @@ input[type="checkbox"]:checked {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--muted);
 }
 .countdown-grid strong {
-  font-family: var(--font-led), monospace;
+  font-family: var(--font-ui), monospace;
   font-weight: 400;
-  font-size: 44px;
+  font-size: 40px;
   line-height: 1;
   color: var(--cyan);
 }
 .countdown-grid small {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .tag-button {
   width: calc(100% - 8px);
@@ -1259,31 +1296,31 @@ input[type="checkbox"]:checked {
   margin: 4px;
 }
 .challenge-code span {
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--muted);
 }
 .challenge-code strong {
-  font-family: var(--font-led), monospace;
+  font-family: var(--font-ui), monospace;
   font-weight: 400;
   font-size: 64px;
   line-height: 1;
-  letter-spacing: 0.2em;
+  letter-spacing: 8px;
   color: var(--orange);
 }
 .challenge-code small {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .gps-line {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-family: var(--font-label), monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-family: var(--font-ui), monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
   color: var(--muted);
 }
 
@@ -1300,7 +1337,7 @@ input[type="checkbox"]:checked {
 .privacy-end {
   padding: 0 4px;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 .error-banner {
   position: fixed;
@@ -1316,7 +1353,7 @@ input[type="checkbox"]:checked {
   padding: 12px 14px;
   background: #3a1212;
   color: #ffd5d5;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.35;
   box-shadow:
     var(--notch),
@@ -1339,7 +1376,7 @@ input[type="checkbox"]:checked {
 
 @media (min-width: 700px) {
   body {
-    font-size: 22px;
+    font-size: 16px;
   }
   .landing,
   .room-shell,
@@ -1356,7 +1393,7 @@ input[type="checkbox"]:checked {
 }
 @media (max-width: 380px) {
   .plaque {
-    font-size: 30px;
+    font-size: 32px;
     padding: 4px 14px;
   }
   .timer-plaque {
@@ -1369,5 +1406,158 @@ input[type="checkbox"]:checked {
   .phase-announcement,
   .spin {
     animation: none;
+  }
+}
+
+/* ---------- colour system: every colour carries a meaning ----------
+   orange = main action, yellow = highlight/you, green = ready/hider/good,
+   red = seeker/danger, cyan = safe zone/info, blue = secondary action. */
+.console.seeker {
+  --frame: #d6453d;
+  --frame-hi: #ff8f84;
+  --frame-lo: #8f241f;
+}
+.console.hider {
+  --frame: #35a85a;
+  --frame-hi: #7fe39b;
+  --frame-lo: #1e6b38;
+}
+.console.out {
+  --frame: #6b7a99;
+  --frame-hi: #98a6c2;
+  --frame-lo: #3f4b66;
+}
+.ticker.tone-warn {
+  color: var(--orange);
+}
+.ticker.tone-alert {
+  color: var(--red-hi);
+}
+.ticker.tone-good {
+  color: var(--green-hi);
+}
+.ticker.tone-dim {
+  color: #98a6c2;
+}
+.cursor {
+  background: currentColor;
+}
+.timer-plaque strong,
+.countdown-grid strong,
+.challenge-code strong,
+.code-button {
+  text-shadow:
+    2px 2px 0 var(--ink),
+    -2px 0 0 var(--ink),
+    0 -2px 0 var(--ink),
+    2px 0 0 var(--ink),
+    0 2px 0 var(--ink);
+}
+.timer-plaque strong {
+  color: var(--yellow);
+}
+.code-button {
+  color: var(--yellow);
+}
+.countdown-grid > div:first-child strong {
+  color: var(--cyan);
+}
+.countdown-grid > div:last-child strong {
+  color: var(--orange);
+}
+.panel-heading h2 {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px;
+  padding: 2px 12px;
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: var(--notch);
+}
+.panel-heading h2 span {
+  color: var(--ink);
+}
+.roster .panel-heading h2 {
+  background: var(--green);
+}
+.game-roster .panel-heading h2 {
+  background: var(--blue);
+}
+.rules h2 {
+  display: inline-block;
+  margin: 4px;
+  padding: 2px 12px;
+  background: var(--orange);
+  color: var(--ink);
+  box-shadow: var(--notch);
+}
+.rules li:nth-child(5n + 1)::before {
+  background: var(--orange);
+}
+.rules li:nth-child(5n + 2)::before {
+  background: var(--cyan);
+}
+.rules li:nth-child(5n + 3)::before {
+  background: var(--green);
+}
+.rules li:nth-child(5n + 4)::before {
+  background: var(--yellow);
+}
+.rules li:nth-child(5n)::before {
+  background: var(--red);
+}
+.player-row.me {
+  padding: 10px 8px;
+  background: #1b3a7a;
+  box-shadow: inset 0 0 0 4px var(--yellow);
+  border-top-color: transparent;
+}
+.player-name small {
+  padding: 0 6px;
+  background: var(--yellow);
+  color: var(--ink);
+}
+.ready-pill {
+  background: #4a2208;
+  color: var(--orange-hi);
+}
+.ready-pill.is-ready {
+  background: var(--green);
+  color: var(--ink);
+}
+.role-tag {
+  padding: 0 6px;
+  color: var(--ink);
+  background: var(--green);
+}
+.role-tag.seeker {
+  background: var(--red);
+  color: #fff;
+}
+.role-tag.out {
+  background: #6b7a99;
+}
+input:focus-visible {
+  box-shadow:
+    var(--notch),
+    inset 0 0 0 4px var(--yellow);
+}
+input {
+  box-shadow:
+    var(--notch),
+    inset 0 0 0 4px var(--blue-lo);
+}
+.label,
+.led-status {
+  color: var(--blue-hi);
+}
+.game-status-row > button,
+.text-button {
+  color: var(--yellow);
+}
+@media (min-width: 700px) {
+  h1 {
+    font-size: 48px;
   }
 }

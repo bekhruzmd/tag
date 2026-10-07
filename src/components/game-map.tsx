@@ -46,6 +46,10 @@ export default function GameMap({
       m.addControl(new AttributionControl({ compact: true }), "top-left");
       m.on("load", () => {
         recolor(m);
+        // Keep the attribution collapsed to its (i) button; it opens on tap.
+        m.getContainer()
+          .querySelector(".maplibregl-ctrl-attrib")
+          ?.classList.remove("maplibregl-compact-show");
         for (const id of ["zone", "next"])
           m.addSource(id, {
             type: "geojson",

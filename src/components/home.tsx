@@ -110,9 +110,7 @@ export default function Home({
           <>
             <h1>Hide and seek on your campus.</h1>
             <p className="hero-description">
-              One group hides and one group seeks. A safe circle on the map
-              keeps shrinking, so nobody can stay put. You play outside, on your
-              phone, with people you can actually see.
+              Phone-based hide and seek. The safe circle keeps shrinking.
             </p>
             <div className="entry-actions">
               <button
@@ -122,20 +120,16 @@ export default function Home({
                 Create a game
               </button>
               <button
-                className="primary big-action"
+                className="primary blue big-action"
                 onClick={() => setMode("join")}
               >
                 Join with code
               </button>
             </div>
-            <p className="hero-meta">
-              2 to 30 players. Needs GPS. Nothing to install.
-            </p>
             <button className="text-button demo-link" onClick={demo}>
               <span className="u">Try practice mode</span>
               <ArrowRight size={16} strokeWidth={3} />
             </button>
-            <p className="hero-meta">Simulated players, no account needed.</p>
           </>
         ) : (
           <div className="entry-form">
@@ -147,11 +141,6 @@ export default function Home({
               Back to base
             </button>
             <h1>{mode === "create" ? "Start a room" : "Join a room"}</h1>
-            <p className="hero-description">
-              {mode === "create"
-                ? "Pick the meeting point, then share the code with your group."
-                : "Get the 6-character code from the host and meet them at the play area."}
-            </p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -208,14 +197,12 @@ export default function Home({
                       <LocateFixed size={22} strokeWidth={3} />
                     )}
                     <span>
-                      {center
-                        ? "Meeting point set"
-                        : "Use my location as the meeting point"}
-                      <small>
-                        {center
-                          ? `${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`
-                          : "Pick a safe, open area"}
-                      </small>
+                      {center ? "Meeting point set" : "Set meeting point here"}
+                      {center && (
+                        <small>
+                          {center.lat.toFixed(5)}, {center.lng.toFixed(5)}
+                        </small>
+                      )}
                     </span>
                   </button>
                   {gpsMessage && <p className="inline-error">{gpsMessage}</p>}
@@ -228,10 +215,7 @@ export default function Home({
                   checked={consent}
                   onChange={(e) => setConsent(e.target.checked)}
                 />
-                <span>
-                  I’ll keep the game visible and share my location during the
-                  match. Leaving stops sharing.
-                </span>
+                <span>Share my location during the game.</span>
               </label>
               <button
                 className="primary full"
@@ -264,36 +248,17 @@ export default function Home({
         )}
       </main>
       <section id="rules" className="rules">
-        <h2>How a round works</h2>
+        <h2>How to play</h2>
         <ul>
-          <li>
-            The host creates a room and shares the code. Everyone meets at the
-            spot the host picked.
-          </li>
-          <li>
-            When the host starts, a few players are chosen as seekers and the
-            rest hide. Hiders get a head start.
-          </li>
-          <li>
-            At each reveal, seekers see where every hider was a few seconds ago.
-            It is a snapshot, not a live feed.
-          </li>
-          <li>
-            The safe circle shrinks on a timer, and a hider caught outside it is
-            out.
-          </li>
-          <li>
-            A tag only counts when the seeker types the code on the hider’s
-            phone and the hider confirms. The round ends when no hiders are left
-            or time runs out.
-          </li>
+          <li>The host makes a room and shares the code.</li>
+          <li>Hiders hide. Seekers wait, then hunt.</li>
+          <li>Stay inside the circle. It keeps shrinking.</li>
+          <li>Reveals show where hiders were, not where they are.</li>
+          <li>A tag counts when the hider confirms the seeker’s code.</li>
         </ul>
       </section>
       <footer className="site-footer">
-        <span>Location is shared only while a game is running.</span>
-        <span>
-          Map data from OpenStreetMap contributors, served by OpenFreeMap.
-        </span>
+        <span>Location is shared only during a game.</span>
       </footer>
     </div>
   );

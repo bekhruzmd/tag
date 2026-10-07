@@ -131,7 +131,7 @@ export default function CampusArt() {
       />
       <g
         fill="#7fa8ec"
-        fontFamily="var(--font-label), monospace"
+        fontFamily="var(--font-ui), monospace"
         fontSize="9"
         letterSpacing="1"
       >

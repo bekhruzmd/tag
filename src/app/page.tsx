@@ -59,7 +59,9 @@ export default function Page() {
         <Lobby game={game} busy={busy} act={act} leave={leave} />
       ) : ["finished", "cancelled"].includes(game.phase) ? (
         <div className="results-screen">
-          <div className="console">
+          <div
+            className={`console ${game.winner === "seekers" ? "seeker" : game.winner === "hiders" ? "hider" : ""}`}
+          >
             <div className="console-top">
               <span className="icon-button light" aria-hidden="true" />
               <Brand />
@@ -79,13 +81,6 @@ export default function Page() {
                   </>
                 )}
               </h1>
-              <p>
-                {game.phase === "cancelled"
-                  ? "There are no active seekers left. Start a new round to play again."
-                  : game.winner === "hiders"
-                    ? "The hiders lasted until time ran out."
-                    : "The seekers tagged every hider."}
-              </p>
               {game.phase !== "cancelled" && (
                 <p className="result-line">
                   {game.players.length} players,{" "}
@@ -98,7 +93,7 @@ export default function Page() {
                 </p>
               )}
             </div>
-            <Ticker>LOCATION SHARING HAS STOPPED</Ticker>
+            <Ticker tone="good">ROUND OVER</Ticker>
           </div>
           <button className="primary big-action" onClick={() => void leave()}>
             Back to base
