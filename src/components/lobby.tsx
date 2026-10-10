@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import {
   ArrowRight,
   Check,
@@ -13,13 +12,8 @@ import {
   Shield,
   Users,
 } from "lucide-react";
-import { Snapshot, Settings, NumericSetting, presetFor } from "@/lib/types";
+import { Snapshot, Settings } from "@/lib/types";
 import { Brand } from "./home";
-import { Ticker } from "./pixel";
-const RadiusPreview = dynamic(() => import("./radius-preview"), {
-  ssr: false,
-  loading: () => <div className="radius-preview" />,
-});
 export default function Lobby({
   game,
   busy,
@@ -72,15 +66,8 @@ export default function Lobby({
     game.players.length - 1,
     Math.ceil(game.players.length / game.settings.seekers_per),
   );
-  // "Auto" sizes the game for the final head count when the host starts, so show that.
-  const players = game.players.length;
-  const autoTier = presetFor(game.presets, players);
-  const shown: Settings =
-    game.settings.preset === "auto" && autoTier
-      ? { ...game.settings, ...autoTier.settings }
-      : game.settings;
   const fields: {
-    key: NumericSetting;
+    key: keyof Settings;
     label: string;
     min: number;
     max: number;
@@ -152,68 +139,63 @@ export default function Lobby({
   ];
   return (
     <div className="room-shell">
-      <div className="console">
-        <div className="console-top">
-          <button
-            className="icon-button"
-            aria-label="Leave lobby"
-            onClick={() => void leave()}
-          >
-            <LogOut size={22} strokeWidth={3} />
-          </button>
-          <Brand />
-          <span className="icon-button light" aria-label={`${players} players`}>
-            <b>{players}</b>
-          </span>
-        </div>
-        <div className="code-screen">
-          {game.id === "demo" && (
-            <span className="label">PRACTICE · SIMULATED PLAYERS</span>
-          )}
-          <span className="label">ROOM CODE</span>
-          <button
-            className="code-button"
-            aria-label="Copy room code"
-            onClick={() => {
-              void navigator.clipboard
-                ?.writeText(game.code)
-                .then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                })
-                .catch(() => {});
-            }}
-          >
-            {game.code}
-            {copied ? (
-              <Check size={26} strokeWidth={3} />
-            ) : (
-              <Copy size={26} strokeWidth={3} />
-            )}
-          </button>
-          <small>{copied ? "Copied" : "Tap to copy"}</small>
-        </div>
-        <Ticker tone={ready === players ? "good" : "info"}>
-          {ready === players
-            ? "EVERYONE IS READY"
-            : `${ready} OF ${players} READY`}
-        </Ticker>
-      </div>
+      <header className="site-header">
+        <Brand />
+        <button className="text-button muted" onClick={() => void leave()}>
+          <LogOut size={16} />
+          Leave lobby
+        </button>
+      </header>
       <main className="lobby-main">
+        <div className="lobby-intro">
+          <div>
+            <div className="eyebrow">
+              <span className="status-dot" />
+              {game.id === "demo"
+                ? "PRACTICE · SIMULATED PLAYERS"
+                : "THE PRE-GAME"}
+            </div>
+            <h1>
+              Assemble the crew<span>.</span>
+            </h1>
+            <p>Meet at the play area. Ready up. Let the chase begin.</p>
+          </div>
+          <div className="room-code">
+            <span>YOUR ROOM CODE</span>
+            <button
+              aria-label="Copy room code"
+              onClick={() => {
+                void navigator.clipboard
+                  ?.writeText(game.code)
+                  .then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  })
+                  .catch(() => {});
+              }}
+            >
+              {game.code}
+              {copied ? <Check size={20} /> : <Copy size={20} />}
+            </button>
+            <small>
+              {copied
+                ? "Copied. Send it to your friends."
+                : "Share this code with your friends."}
+            </small>
+          </div>
+        </div>
         <div className="lobby-columns">
           <section className="panel roster">
             <div className="panel-heading">
               <h2>
-                Players <span>{game.players.length}/30</span>
+                <Users size={18} />
+                The lineup <span>{game.players.length}/30</span>
               </h2>
-              <span className="small-mono">{ready} ready</span>
+              <span className="small-mono">{ready} READY</span>
             </div>
             <div className="player-list">
               {game.players.map((p, i) => (
-                <div
-                  key={p.id}
-                  className={`player-row ${p.id === me.id ? "me" : ""}`}
-                >
+                <div key={p.id} className="player-row">
                   <div className={`avatar avatar-${i % 4}`}>
                     {p.name.slice(0, 2).toUpperCase()}
                   </div>
@@ -221,18 +203,18 @@ export default function Lobby({
                     <strong>
                       {p.name} {p.id === me.id && <small>YOU</small>}
                     </strong>
-                    {(p.id === game.host || !p.connected) && (
-                      <span>
-                        {p.id === game.host ? (
-                          <>
-                            <Crown size={13} strokeWidth={3} />
-                            Host
-                          </>
-                        ) : (
-                          "Reconnecting…"
-                        )}
-                      </span>
-                    )}
+                    <span>
+                      {p.id === game.host ? (
+                        <>
+                          <Crown size={11} />
+                          Host
+                        </>
+                      ) : p.connected ? (
+                        "In the lobby"
+                      ) : (
+                        "Reconnecting…"
+                      )}
+                    </span>
                   </div>
                   <span className={`ready-pill ${p.ready ? "is-ready" : ""}`}>
                     {p.ready ? (
@@ -247,16 +229,22 @@ export default function Lobby({
                 </div>
               ))}
             </div>
+            <div className="empty-slots">
+              <span>+</span>There’s room for more. Send out the code.
+            </div>
           </section>
           <aside className="lobby-aside">
             <section className="panel">
               <div className="panel-heading">
-                <h2>Rules</h2>
+                <h2>
+                  <Settings2 size={18} />
+                  Game plan
+                </h2>
                 {host && (
                   <button
                     className="text-button small"
                     onClick={() => {
-                      setSettings(shown);
+                      setSettings(game.settings);
                       setEditing(!editing);
                     }}
                   >
@@ -274,66 +262,6 @@ export default function Lobby({
                     });
                   }}
                 >
-                  {game.presets && (
-                    <div
-                      className="preset-row"
-                      role="group"
-                      aria-label="Game size"
-                    >
-                      <button
-                        type="button"
-                        className={
-                          settings.preset === "auto" ? "is-active" : ""
-                        }
-                        aria-pressed={settings.preset === "auto"}
-                        onClick={() =>
-                          setSettings({
-                            ...settings,
-                            ...autoTier?.settings,
-                            preset: "auto",
-                          })
-                        }
-                      >
-                        Auto
-                        <small>{autoTier?.name ?? "by players"}</small>
-                      </button>
-                      {game.presets.map((p) => (
-                        <button
-                          type="button"
-                          key={p.name}
-                          className={
-                            settings.preset !== "auto" &&
-                            Object.entries(p.settings).every(
-                              ([k, v]) => settings[k as NumericSetting] === v,
-                            )
-                              ? "is-active"
-                              : ""
-                          }
-                          onClick={() =>
-                            setSettings({
-                              ...settings,
-                              ...p.settings,
-                              preset: "custom",
-                            })
-                          }
-                        >
-                          {p.name}
-                          <small>
-                            {p.min}–{p.max}
-                          </small>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <RadiusPreview
-                    center={game.center}
-                    radius={settings.radius}
-                    minRadius={settings.min_radius}
-                  />
-                  <p className="preview-caption">
-                    Safe zone {Math.round(settings.radius * 2)} m across ·
-                    closes to {Math.round(settings.min_radius * 2)} m
-                  </p>
                   {fields.map((f) => (
                     <label key={f.key}>
                       {f.label}
@@ -348,7 +276,6 @@ export default function Lobby({
                             setSettings({
                               ...settings,
                               [f.key]: Number(e.target.value),
-                              preset: "custom",
                             })
                           }
                         />
@@ -362,51 +289,75 @@ export default function Lobby({
                 </form>
               ) : (
                 <div className="settings-summary">
-                  {game.settings.preset === "auto" && autoTier && (
-                    <div>
-                      <span>Size</span>
-                      <strong>
-                        Auto · {autoTier.name} for {players}
-                      </strong>
-                    </div>
-                  )}
                   <div>
                     <span>Head start</span>
                     <strong>
-                      {shown.hide_seconds / 60 < 1
-                        ? `${shown.hide_seconds} sec`
-                        : `${shown.hide_seconds / 60} min`}
+                      {game.settings.hide_seconds / 60 < 1
+                        ? `${game.settings.hide_seconds} sec`
+                        : `${game.settings.hide_seconds / 60} min`}
                     </strong>
                   </div>
                   <div>
                     <span>The hunt</span>
-                    <strong>{shown.hunt_seconds / 60} min</strong>
+                    <strong>{game.settings.hunt_seconds / 60} min</strong>
                   </div>
                   <div>
                     <span>Location reveals</span>
                     <strong>
                       Every{" "}
-                      {shown.reveal_seconds < 60
-                        ? `${shown.reveal_seconds}s`
-                        : `${shown.reveal_seconds / 60} min`}
+                      {game.settings.reveal_seconds < 60
+                        ? `${game.settings.reveal_seconds}s`
+                        : `${game.settings.reveal_seconds / 60} min`}
                     </strong>
                   </div>
                   <div>
                     <span>Safe zone</span>
                     <strong>
-                      {shown.radius}m → {shown.min_radius}m
+                      {game.settings.radius}m → {game.settings.min_radius}m
                     </strong>
                   </div>
                   <div>
                     <span>Seekers</span>
-                    <strong>{Math.max(1, seekerCount)}</strong>
+                    <strong>
+                      {Math.max(1, seekerCount)} randomly assigned
+                    </strong>
                   </div>
                 </div>
               )}
             </section>
+            <div className="lobby-notice">
+              <Shield size={21} />
+              <div>
+                <strong>Your location stays yours.</strong>
+                <p>
+                  Seekers only see brief snapshots during reveals. Keep this app
+                  open during the game.
+                </p>
+              </div>
+            </div>
+            <div className="location-caption">
+              <MapPin size={14} />
+              {game.center.lat.toFixed(4)}, {game.center.lng.toFixed(4)} ·
+              meeting point
+            </div>
           </aside>
         </div>
         <div className="lobby-bottom">
+          <div>
+            <Radio size={22} />
+            <span>
+              <strong>
+                {ready === game.players.length
+                  ? "Everyone’s ready. Let’s do this."
+                  : "Waiting for the crew to ready up."}
+              </strong>
+              <small>
+                {game.id === "demo"
+                  ? "Demo uses a 15-second head start and simulated GPS."
+                  : "Roles are assigned when the host starts the game."}
+              </small>
+            </span>
+          </div>
           {locationMessage && (
             <p className="inline-error" role="alert">
               {locationMessage}
@@ -414,7 +365,7 @@ export default function Lobby({
           )}
           <div className="lobby-buttons">
             <button
-              className={me.ready ? "primary green" : "primary yellow"}
+              className={me.ready ? "secondary" : "primary"}
               disabled={busy || checking}
               onClick={toggleReady}
             >
@@ -427,7 +378,7 @@ export default function Lobby({
             </button>
             {host && (
               <button
-                className="primary green"
+                className="primary"
                 disabled={
                   busy ||
                   game.players.length < 2 ||

@@ -1,17 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
-// One self-hosted pixel face for everything (every digit stays unambiguous).
-const ui = localFont({
-  src: "../fonts/Tiny5.woff2",
-  variable: "--font-ui",
-  weight: "400",
-  display: "swap",
-});
 export const metadata: Metadata = {
-  title: "TAG: hide and seek on campus",
+  title: "TAG — The campus is your playground.",
   description:
-    "Hide and seek on your phone. A safe zone on the map keeps shrinking.",
+    "Real-world hide-and-seek. A shrinking zone. Nowhere to stand still.",
   applicationName: "TAG",
   appleWebApp: {
     capable: true,
@@ -24,7 +16,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#0a1230",
+  themeColor: "#111512",
   viewportFit: "cover",
 };
 export default function RootLayout({
@@ -33,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={ui.variable}>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

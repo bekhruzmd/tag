@@ -16,7 +16,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Ticker, ZoneRadar } from "./pixel";
 import { Snapshot, Fix, countdown, clock } from "@/lib/types";
 const GameMap = dynamic(() => import("./game-map"), {
   ssr: false,
@@ -87,26 +86,6 @@ export default function Gameplay({
     const timer = setTimeout(() => setAnnouncement(""), 2600);
     return () => clearTimeout(timer);
   }, [game.phase, me.role]);
-  const tickerText = eliminated
-    ? "YOU ARE OUT"
-    : hiding
-      ? seeking
-        ? "HEAD START. HOLD HERE"
-        : "HIDE. STAY IN THE CIRCLE"
-      : reveal <= 10
-        ? `REVEAL IN ${reveal}`
-        : visibleReveal || justRevealed
-          ? "LOCATIONS REVEALED"
-          : zoneClosing
-            ? `ZONE CLOSES IN ${zone}S`
-            : "THE HUNT IS ON";
-  const tickerTone: "info" | "warn" | "alert" | "dim" = eliminated
-    ? "dim"
-    : zoneClosing
-      ? "alert"
-      : reveal <= 10 || visibleReveal || justRevealed
-        ? "warn"
-        : "info";
   const gpsProblem =
     game.id !== "demo" &&
     !eliminated &&
@@ -118,10 +97,21 @@ export default function Gameplay({
   }, [gpsAlarm]);
   return (
     <div className="game-screen">
-      <div
-        className={`console game-console ${eliminated ? "out" : seeking ? "seeker" : "hider"}`}
-      >
-        <div className="console-top">
+      <GameMap game={game} fix={fix} now={now} />
+      <div className="game-vignette" />
+      <header className="game-top">
+        <div className="game-top-row">
+          <span className="game-wordmark">tag.</span>
+          <span className={`role-chip ${seeking ? "seeker" : ""}`}>
+            {eliminated ? (
+              <Eye size={14} />
+            ) : seeking ? (
+              <Target size={14} />
+            ) : (
+              <Shield size={14} />
+            )}{" "}
+            {eliminated ? "SPECTATOR" : me.role?.toUpperCase()}
+          </span>
           <button
             className="icon-button"
             aria-label="Leave game"
@@ -130,127 +120,168 @@ export default function Gameplay({
                 void leave();
             }}
           >
-            <LogOut size={22} strokeWidth={3} />
+            <LogOut size={18} />
           </button>
-          <div className="plaque timer-plaque" role="timer">
-            <span className="label">{hiding ? "HEAD START" : "TIME LEFT"}</span>
-            <strong>{clock(countdown(game.phase_ends, now))}</strong>
-          </div>
-          <span
-            className={`icon-button role ${eliminated ? "out" : seeking ? "seeker" : "hider"}`}
-            role="img"
-            aria-label={eliminated ? "Spectator" : `Role: ${me.role}`}
-          >
-            {eliminated ? (
-              <Eye size={24} strokeWidth={3} />
-            ) : seeking ? (
-              <Target size={24} strokeWidth={3} />
-            ) : (
-              <Shield size={24} strokeWidth={3} />
-            )}
-          </span>
         </div>
-        <div className="countdown-grid">
-          <div>
-            <span>ZONE</span>
-            <strong>{game.next_shrink ? clock(zone) : "FINAL"}</strong>
-            <small>
-              {Math.round(game.radius)}
-              {game.next_shrink ? `>${Math.round(game.next_radius)}` : ""}m
-            </small>
-          </div>
-          <div>
-            <span>REVEAL</span>
-            <strong>{clock(reveal)}</strong>
-          </div>
+        <div className="game-timer">
+          <span>{hiding ? "HEAD START" : "TIME TO SURVIVE"}</span>
+          <strong>{clock(countdown(game.phase_ends, now))}</strong>
         </div>
-        <div className="map-bezel">
-          <GameMap game={game} fix={fix} now={now} />
-          <div className="radar-slot">
-            <ZoneRadar
-              center={game.center}
-              radius={game.radius}
-              nextRadius={game.next_radius}
-              fix={fix}
-              fallbackToCenter={game.id === "demo"}
-              reveals={visibleReveal ? game.reveals : []}
-            />
-          </div>
-          {!synced && (
-            <div className="connection-banner" role="status">
-              Connection lost.
-            </div>
-          )}
-          {announcement && (
-            <div
-              className="phase-announcement"
-              aria-live="polite"
-              key={announcement}
-            >
-              <h1>{announcement}</h1>
-            </div>
-          )}
-          {showRoster && (
-            <section className="game-roster panel">
-              <div className="panel-heading">
-                <h2>Players</h2>
-                <button
-                  className="icon-button small"
-                  aria-label="Close player list"
-                  onClick={() => setShowRoster(false)}
-                >
-                  <X size={18} strokeWidth={3} />
-                </button>
-              </div>
-              {game.players.map((p) => (
-                <div className="compact-player" key={p.id}>
-                  <span>
-                    {p.name}
-                    {p.id === me.id ? " (you)" : ""}
-                  </span>
-                  <small
-                    className={`role-tag ${p.status === "eliminated" ? "out" : p.role}`}
-                  >
-                    {p.status === "eliminated" ? "OUT" : p.role?.toUpperCase()}
-                  </small>
-                </div>
-              ))}
-            </section>
-          )}
-        </div>
-        <Ticker tone={tickerTone}>{tickerText}</Ticker>
-      </div>
-      <div className="game-bottom">
         <div className="game-status-row">
           <button onClick={() => setShowRoster(!showRoster)}>
-            <Users size={18} strokeWidth={3} />
+            <Users size={15} />
             {alive}/{total} hiders
+            <ChevronDown size={14} />
           </button>
-          <span className="led-status">
-            <i className={synced ? "led" : "led off"} />
-            {game.id === "demo"
-              ? "PRACTICE"
-              : synced
-                ? "CONNECTED"
-                : "RECONNECTING"}
+          <span>
+            <i className={synced ? "status-dot" : "status-dot orange"} />
+            {game.id === "demo" ? "PRACTICE" : synced ? "LIVE" : "RECONNECTING"}
           </span>
         </div>
-        {eliminated && (
-          <p className="game-message">
-            <strong>You are out.</strong> {me.reason}.
+      </header>
+      {!synced && (
+        <div className="connection-banner">
+          Connection interrupted. Actions are unavailable until synced.
+        </div>
+      )}
+      {announcement && (
+        <div
+          className="phase-announcement"
+          aria-live="polite"
+          key={announcement}
+        >
+          <span>THIS IS YOUR MOMENT</span>
+          <h1>{announcement}</h1>
+          <p>
+            {seeking
+              ? "Eyes up. Let them hide. Then go find them."
+              : "Find your spot. Keep your next move ready."}
           </p>
+        </div>
+      )}
+      {showRoster && (
+        <section className="game-roster panel">
+          <div className="panel-heading">
+            <h2>The field</h2>
+            <button
+              className="icon-button"
+              aria-label="Close player list"
+              onClick={() => setShowRoster(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          {game.players.map((p) => (
+            <div className="compact-player" key={p.id}>
+              <span>
+                {p.name}
+                {p.id === me.id ? " (you)" : ""}
+              </span>
+              <small>
+                {p.status === "eliminated" ? "OUT" : p.role?.toUpperCase()}
+              </small>
+            </div>
+          ))}
+        </section>
+      )}
+      <div className="game-bottom">
+        {game.id === "demo" && (
+          <div className="practice-label">
+            PRACTICE MODE · SIMULATED GPS & PLAYERS
+          </div>
+        )}
+        {eliminated ? (
+          <div className="game-message">
+            <Eye size={22} />
+            <div>
+              <strong>You’re out. The chase goes on.</strong>
+              <p>{me.reason}. Location sharing has stopped.</p>
+            </div>
+          </div>
+        ) : hiding ? (
+          <div className="game-message">
+            <Shield size={22} />
+            <div>
+              <strong>
+                {seeking
+                  ? "Give them a head start."
+                  : "Make yourself hard to find."}
+              </strong>
+              <p>
+                {seeking
+                  ? "Stay at the meeting point until the hunt begins."
+                  : "Your location is hidden. Stay within the circle."}
+              </p>
+            </div>
+          </div>
+        ) : reveal <= 10 ? (
+          <div className="game-message urgent">
+            <Radio size={23} />
+            <div>
+              <strong>LOCATION REVEAL IN {reveal}</strong>
+              <p>
+                {seeking
+                  ? "Watch for a snapshot. They won’t stay there."
+                  : "Make your next move count."}
+              </p>
+            </div>
+          </div>
+        ) : visibleReveal || justRevealed ? (
+          <div className="game-message urgent">
+            <ScanLine size={23} />
+            <div>
+              <strong>LOCATION REVEALED</strong>
+              <p>
+                {seeking
+                  ? "Orange markers show where they were, not where they are."
+                  : "Your position was shared. Time to make your next move."}
+              </p>
+            </div>
+          </div>
+        ) : null}
+        {zoneClosing && !eliminated && (
+          <div className="zone-warning">
+            <MapPin size={14} />
+            <span>
+              ZONE CLOSING · {zone}s to reach the {Math.round(game.next_radius)}
+              m circle
+            </span>
+          </div>
         )}
         {gpsProblem && (
           <div className="gps-alert" role="alert">
-            {gps}. Move to open sky.
+            {gps}. Move to open sky, check location permission, and keep this
+            screen on.
           </div>
         )}
         {game.gps_deadline && !eliminated && (
           <div className="gps-alert">
-            Location needed · {clock(countdown(game.gps_deadline, now))}
+            Location check needed · {clock(countdown(game.gps_deadline, now))}{" "}
+            to reconnect with usable GPS.
           </div>
         )}
         <div className="game-control-card">
+          <div className="countdown-grid">
+            <div>
+              <span>
+                <MapPin size={13} />
+                SAFE ZONE
+              </span>
+              <strong>{game.next_shrink ? clock(zone) : "FINAL ZONE"}</strong>
+              <small>
+                {Math.round(game.radius)}m
+                {game.next_shrink ? ` → ${Math.round(game.next_radius)}m` : ""}
+              </small>
+            </div>
+            <div>
+              <span>
+                <Radio size={13} />
+                NEXT REVEAL
+              </span>
+              <strong>{clock(reveal)}</strong>
+              <small>{game.settings.reveal_duration}-second snapshot</small>
+            </div>
+          </div>
           {!hiding &&
             !eliminated &&
             (pending ? (
@@ -259,7 +290,7 @@ export default function Gameplay({
                   {game.players.find((p) => p.id === pending.seeker)?.name}{" "}
                   found you.
                 </strong>
-                <p>Confirm only if face to face.</p>
+                <p>Confirm only if you’ve met face to face.</p>
                 <div>
                   <button
                     className="secondary"
@@ -269,7 +300,7 @@ export default function Gameplay({
                     Not a tag
                   </button>
                   <button
-                    className="primary green"
+                    className="primary"
                     disabled={busy || !synced}
                     onClick={() => void act("confirm", { id: pending.id })}
                   >
@@ -293,7 +324,7 @@ export default function Gameplay({
                     }}
                   >
                     <label>
-                      Hider’s code
+                      Enter the code shown on the hider’s phone
                       <input
                         autoFocus
                         aria-label="Hider tag code"
@@ -313,10 +344,7 @@ export default function Gameplay({
                       >
                         Cancel
                       </button>
-                      <button
-                        className="primary red"
-                        disabled={busy || !synced}
-                      >
+                      <button className="primary" disabled={busy || !synced}>
                         Request tag
                         <ArrowRight size={17} />
                       </button>
@@ -324,7 +352,7 @@ export default function Gameplay({
                   </form>
                 ) : (
                   <button
-                    className="primary red full tag-button"
+                    className="primary full tag-button"
                     disabled={busy || !synced}
                     onClick={() =>
                       game.id === "demo" ? void act("tag") : setTagging(true)
@@ -342,15 +370,16 @@ export default function Gameplay({
               <>
                 {challenge && Date.parse(challenge.expires) > now ? (
                   <div className="challenge-code">
-                    <span>SHOW YOUR SEEKER</span>
+                    <span>SHOW THIS TO YOUR SEEKER</span>
                     <strong>{challenge.code}</strong>
                     <small>
-                      Expires in {countdown(challenge.expires, now)}s
+                      Expires in {countdown(challenge.expires, now)}s · Keep
+                      both phones nearby
                     </small>
                   </div>
                 ) : (
                   <button
-                    className="primary yellow full tag-button"
+                    className="secondary full tag-button"
                     disabled={busy || !synced}
                     onClick={() => void act("challenge")}
                   >

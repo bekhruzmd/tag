@@ -4,14 +4,14 @@ test("practice loop reaches a server-independent demo result without layout over
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Hide and seek on your campus/ }),
+    page.getByRole("heading", { name: /Your campus/ }),
   ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBeTruthy();
-  await page.getByRole("button", { name: /Try practice mode/ }).click();
+  await page.getByRole("button", { name: /Get a feel for it/ }).click();
   await expect(page.getByText("PRACTICE · SIMULATED PLAYERS")).toBeVisible();
   await page.getByRole("button", { name: "I’m ready", exact: true }).click();
   await page.getByRole("button", { name: /Start the game/ }).click();
@@ -29,7 +29,7 @@ test("practice loop reaches a server-independent demo result without layout over
       .getByRole("button", { name: "Practice a confirmed tag" })
       .click();
   await expect(
-    page.getByRole("heading", { name: /seekers take the win/i }),
+    page.getByRole("heading", { name: /seekers take the win/ }),
   ).toBeVisible();
   await expect(page.getByText("Location sharing has stopped.")).toBeVisible();
   await page.getByRole("button", { name: "Back to base" }).click();
@@ -47,19 +47,4 @@ test("join form does not enable participation without explicit consent", async (
   await expect(page.getByRole("button", { name: "Join lobby" })).toBeDisabled();
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: "Join lobby" })).toBeEnabled();
-});
-test("host can preview the safe-zone size while editing settings", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /Try practice mode/ }).click();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await expect(page.getByText(/Safe zone 800 m across/)).toBeVisible();
-  await page.getByLabel(/Starting radius/).fill("200");
-  await expect(page.getByText(/Safe zone 400 m across/)).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBeTruthy();
 });

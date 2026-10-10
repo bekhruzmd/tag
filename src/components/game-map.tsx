@@ -1,18 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  AttributionControl,
-  GeoJSONSource,
-  Map as LibreMap,
-  Marker,
-} from "maplibre-gl";
+import { GeoJSONSource, Map as LibreMap, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { LocateFixed } from "lucide-react";
 import { Snapshot, Fix, circle } from "@/lib/types";
-import { MAP_STYLE, recolor } from "@/lib/map-config";
-import { DOT, STAR, badgeRows, svgMarkup } from "@/lib/pixel-art";
-const pinHtml = (fill: string, glyph: string[], glyphColor: string) =>
-  svgMarkup(badgeRows(glyph), { o: "#060d22", f: fill, g: glyphColor }, 4);
+// OpenFreeMap: free vector tiles built on OpenStreetMap data, no API key or quota.
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/dark";
 export default function GameMap({
   game,
   fix,
@@ -23,15 +17,13 @@ export default function GameMap({
   now: number;
 }) {
   const el = useRef<HTMLDivElement>(null),
-    map = useRef<LibreMap | null>(null),
-    pins = useRef(new Map<string, Marker>());
+    map = useRef<LibreMap | null>(null);
   const [loaded, setLoaded] = useState(false),
     [failed, setFailed] = useState(false);
   const initial = useRef(game);
   useEffect(() => {
     if (!el.current) return;
     const g = initial.current;
-    const placed = pins.current;
     let m: LibreMap;
     try {
       m = new LibreMap({
@@ -39,18 +31,12 @@ export default function GameMap({
         style: MAP_STYLE,
         center: [g.center.lng, g.center.lat],
         zoom: 15,
-        attributionControl: false,
+        attributionControl: { compact: true },
         maxZoom: 19,
       });
       map.current = m;
-      m.addControl(new AttributionControl({ compact: true }), "top-left");
       m.on("load", () => {
-        recolor(m);
-        // Keep the attribution collapsed to its (i) button; it opens on tap.
-        m.getContainer()
-          .querySelector(".maplibregl-ctrl-attrib")
-          ?.classList.remove("maplibregl-compact-show");
-        for (const id of ["zone", "next"])
+        for (const id of ["zone", "next", "players"])
           m.addSource(id, {
             type: "geojson",
             data: { type: "FeatureCollection", features: [] },
@@ -59,23 +45,44 @@ export default function GameMap({
           id: "zone-fill",
           type: "fill",
           source: "zone",
-          paint: { "fill-color": "#7fe7ff", "fill-opacity": 0.08 },
+          paint: { "fill-color": "#bce76b", "fill-opacity": 0.08 },
         });
         m.addLayer({
           id: "zone-line",
           type: "line",
           source: "zone",
-          paint: { "line-color": "#7fe7ff", "line-width": 3 },
+          paint: { "line-color": "#c5f45c", "line-width": 2.5 },
         });
         m.addLayer({
           id: "next-line",
           type: "line",
           source: "next",
           paint: {
-            "line-color": "#ffffff",
-            "line-width": 2,
-            "line-dasharray": [2, 2],
-            "line-opacity": 0.8,
+            "line-color": "#e9f4ce",
+            "line-width": 1.5,
+            "line-dasharray": [3, 4],
+            "line-opacity": 0.5,
+          },
+        });
+        m.addLayer({
+          id: "players-halo",
+          type: "circle",
+          source: "players",
+          paint: {
+            "circle-color": ["get", "color"],
+            "circle-radius": 18,
+            "circle-opacity": 0.18,
+          },
+        });
+        m.addLayer({
+          id: "players-dot",
+          type: "circle",
+          source: "players",
+          paint: {
+            "circle-color": ["get", "color"],
+            "circle-radius": 7,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#ffffff",
           },
         });
         setLoaded(true);
@@ -86,8 +93,6 @@ export default function GameMap({
       return;
     }
     return () => {
-      for (const pin of placed.values()) pin.remove();
-      placed.clear();
       m.remove();
       map.current = null;
     };
@@ -124,45 +129,31 @@ export default function GameMap({
         ? { lat: game.center.lat, lng: game.center.lng }
         : null);
     const valid = game.reveal_expires && Date.parse(game.reveal_expires) > now;
-    const wanted = new Map<
-      string,
-      { lat: number; lng: number; html: string; label: string }
-    >();
-    if (own)
-      wanted.set("you", {
-        ...own,
-        html: pinHtml("#ffffff", DOT, "#2d86c4"),
-        label: "You",
-      });
-    if (valid)
-      for (const p of game.reveals)
-        wanted.set(`reveal-${p.id}`, {
-          lat: p.lat,
-          lng: p.lng,
-          html: pinHtml("#ff9a2f", STAR, "#ffffff"),
-          label: "Hider, where they were at the last reveal",
-        });
-    const placed = pins.current;
-    for (const [key, pin] of placed)
-      if (!wanted.has(key)) {
-        pin.remove();
-        placed.delete(key);
-      }
-    for (const [key, w] of wanted) {
-      const existing = placed.get(key);
-      if (existing) existing.setLngLat([w.lng, w.lat]);
-      else {
-        const node = document.createElement("div");
-        node.className = "pin";
-        node.setAttribute("role", "img");
-        node.setAttribute("aria-label", w.label);
-        node.innerHTML = w.html;
-        placed.set(
-          key,
-          new Marker({ element: node }).setLngLat([w.lng, w.lat]).addTo(m),
-        );
-      }
-    }
+    const features = [
+      ...(own
+        ? [
+            {
+              type: "Feature" as const,
+              properties: { color: "#c5f45c" },
+              geometry: {
+                type: "Point" as const,
+                coordinates: [own.lng, own.lat],
+              },
+            },
+          ]
+        : []),
+      ...(valid
+        ? game.reveals.map((p) => ({
+            type: "Feature" as const,
+            properties: { color: "#ffa778" },
+            geometry: { type: "Point" as const, coordinates: [p.lng, p.lat] },
+          }))
+        : []),
+    ];
+    (m.getSource("players") as GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features,
+    });
   }, [game, fix, now, loaded]);
   return (
     <>
@@ -173,7 +164,7 @@ export default function GameMap({
         </div>
       )}
       <button
-        className="recenter icon-button small"
+        className="recenter icon-button"
         aria-label="Center map on my location"
         onClick={() =>
           map.current?.easeTo({
@@ -187,7 +178,7 @@ export default function GameMap({
           })
         }
       >
-        <LocateFixed size={20} strokeWidth={3} />
+        <LocateFixed size={21} />
       </button>
     </>
   );
